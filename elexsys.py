@@ -21,6 +21,9 @@ def load_DSC(filename):
 
     Args:
         filename (str): Path to data.
+
+    Returns:
+        DSC_dict (dict): Dictionary of Descriptor Information in DSC file
     '''
 
     DSC_dict = {}
@@ -106,10 +109,10 @@ def load_elexsys(filename):
         dims += 1
         dimsList.append(z)
 
-    #Reshape data
+    # Reshape data
     data = data.reshape(xpts,ypts,zpts)
 
-    #Remove length 1 dimensions
+    # Remove length 1 dimensions
     data = data.squeeze() 
     if len(dimsList) == 1:
         dimsList = dimsList[0]

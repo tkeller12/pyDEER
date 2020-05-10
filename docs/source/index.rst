@@ -11,6 +11,7 @@ Welcome to pyDEER's documentation!
    :caption: Contents:
 
    tikreg
+   elexsys
 
 
 
