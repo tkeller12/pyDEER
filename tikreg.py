@@ -1,5 +1,6 @@
 import numpy as np
 import os
+from scipy.optimize import least_squares
 
 def kernel(t,r,angles = 5000):
     '''Return the Kernel Matrix.
@@ -91,22 +92,83 @@ def deer_trace(t,r,angles=1000):
     trace = trace / angles
     return trace
 
-def background(t,c, d = 3.):
+def background(t,tau, A, B, d = 3.):
     '''DEER Background function
 
     .. math::
-        e^{-c t^{d/3}}
+        A + B e^{- t^{d/3}/\\tau}
 
     Args:
         t (numpy.ndarray): Time axes for background function
-        c (float): Constant 
+        tau (float): Constant 
+        A (float): Offset
+        B (float): Scaling factor
         d (float): dimensionality of background function
 
     Returns:
         background_signal (numpy.ndarray)
     '''
-    background_signal = np.exp(-c*(t**(dimensionality/3.)))
+    background_signal = A + B*np.exp(-1*(np.abs(t)**(d/3.))/tau)
     return background_signal
+
+def background_x0(data,t):
+    '''Guess initial parameters for background function
+
+    Args:
+        data (numpy.ndarray): Array of data
+        t (numpy.ndarray): Array of axes
+
+    Returns:
+        x0 (list): List of parameters for fit initial guess
+    '''
+
+    A = data[-1]
+    B = np.max(data) - A
+    tau = 1e-6
+    d = 3.
+    
+    x0 = [tau, A, B]
+    return x0
+
+def fit_background(data,t,background_function = background,t_min = 0.):
+    '''Fit DEER data to background function
+
+    Args:
+        data (numpy.ndarray): Array of data values
+        t (numpy.ndarray): Array of time axis values
+        background_function (func): Background function
+        t_min (float): Start time for fit
+
+    Returns:
+        fit (numpy.ndarray): Fit of data
+    '''
+
+    def res(x,data,t):
+        '''Calculate Residual
+
+        Args:
+            x (list): List of fitting parameters
+            data (numpy.ndarray): Array of data values
+            t (numpy.ndarray): Array of time values
+        '''
+
+        residual = data - background_function(t,*x)
+        return residual
+
+    x0 = background_x0(data,t)
+
+    # select range of data for fit
+    data_fit = data[t >= t_min]
+    t_fit = t[t >= t_min]
+
+    out = least_squares(res,x0,verbose = 2,args = (data_fit,t_fit))
+    x = out['x']
+
+    
+    fit = background_function(t,*x)
+
+    return fit
+
 
 def tikhonov(K,S,lambda_ = 1.0,L = None):
     '''Perform Tikhonov Regularization
@@ -148,33 +210,40 @@ def gaussian(r,sigma,mu):
     gaussian_dist = (1./(np.sqrt(2*np.pi*(sigma**2.)))) * np.exp(-1*(r-mu)**2./(2.*(sigma**2.)))
     return gaussian_dist
 
-#def gaussian_dist(r,sigma,mu,pts=100):
-#    '''Generate Gaussian distribution
-#    Args:
-#
-#    Returns:
-#
-#    '''
-#    v = np.zeros(len(t))
-#
-#    for x in r:
-#        weight = gaussian(x,sigma,mu)
-#        v += weight*signal(x,t)
-#    return v
-
 if __name__ == '__main__':
     from matplotlib.pylab import *
 
-    t = np.r_[-0.1e-6:10e-6:200j]
-    r = np.r_[1.5e-9:8e-9:500j]
+    t = np.r_[-0.1e-6:5e-6:200j]
+    r = np.r_[1.5e-9:8e-9:200j]
+
+    b = background(t, 10e-6, 10.e3, 10.e3, d = 3.)
+    x0 = background_x0(b,t)
+    print(x0)
+    b_guess = background(t,*x0)
+
+    figure()
+    plot(t,b)
+    plot(t,b_guess,'r-')
+
+    data = b
+    fit = fit_background(data,t)
+
+    figure()
+    plot(t,b)
+    plot(t,fit,'r--')
 
     trace = deer_trace(t,4e-9,angles = 100)
     gaussian_dist = gaussian(r,0.5e-9,5e-9)
     kernel_matrix = kernel(t,r,angles = 2000)
 
     deer = np.dot(kernel_matrix,gaussian_dist)
+    deer = deer / np.max(deer)
+    noise = 0.05*np.random.randn(len(deer))
+    data = deer + noise
 
-    P_calc = tikhonov(kernel_matrix,deer)
+    P_calc = tikhonov(kernel_matrix,data,2.)
+    P_calc = P_calc/np.max(P_calc)
+    gaussian_dist = gaussian_dist / np.max(gaussian_dist)
 
 
     figure()
@@ -188,7 +257,10 @@ if __name__ == '__main__':
     figure()
     plot(r,gaussian_dist)
     figure()
-    plot(t*1e6,deer)
+    plot(t*1e6,deer,'b-')
+    plot(t*1e6,data,'g-')
     figure()
-    plot(r,P_calc)
+    plot(r,gaussian_dist,'b-',label = 'exact')
+    plot(r,P_calc,'r-',label = 'tik')
     show()
+

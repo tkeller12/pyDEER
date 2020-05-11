@@ -12,8 +12,7 @@ Welcome to pyDEER's documentation!
 
    tikreg
    elexsys
-
-
+   awg
 
 Indices and tables
 ==================
