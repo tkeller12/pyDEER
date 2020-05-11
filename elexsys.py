@@ -88,6 +88,7 @@ def load_elexsys(filename):
         xwid = DSC_dict['XWID']
 
         x = xmin + np.r_[0:xwid:1j*xpts]
+
         dims += 1
         dimsList.append(x)
 

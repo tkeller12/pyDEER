@@ -108,7 +108,7 @@ def background(t,c, d = 3.):
     background_signal = np.exp(-c*(t**(dimensionality/3.)))
     return background_signal
 
-def tikhonov(K,S,lambda_ = 1.0,operator = None):
+def tikhonov(K,S,lambda_ = 1.0,L = None):
     '''Perform Tikhonov Regularization
 
     .. math::
@@ -120,6 +120,10 @@ def tikhonov(K,S,lambda_ = 1.0,operator = None):
         lambda_ (float): Regularization parameter
         operator (None, numpy.ndarray): Tikhonov regularization operator, uses identity if argument is None
     '''
+    # Select Real Part
+    S = np.real(S)
+
+    # Set Operator for Tikhonov Regularization
     if L == None:
         L = np.eye(np.shape(K)[1])
 
