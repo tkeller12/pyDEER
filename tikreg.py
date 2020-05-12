@@ -1,6 +1,6 @@
 import numpy as np
 import os
-from scipy.optimize import least_squares
+from scipy.optimize import least_squares, minimize
 
 def kernel(t,r,angles = 5000):
     '''Return the Kernel Matrix.
@@ -170,7 +170,7 @@ def fit_background(data,t,background_function = background,t_min = 0.):
     return fit
 
 
-def tikhonov(K,S,lambda_ = 1.0,L = None):
+def tikhonov(K, S, lambda_ = 1.0, L = None):
     '''Perform Tikhonov Regularization
 
     .. math::
@@ -189,10 +189,101 @@ def tikhonov(K,S,lambda_ = 1.0,L = None):
     if L == None:
         L = np.eye(np.shape(K)[1])
 
-    P_lambda = np.dot(np.linalg.inv(np.dot(K.T,K)+(lambda_**2.)*np.dot(L.T,L)),np.dot(K.T,S))
+    P_lambda = np.dot(np.linalg.inv(np.dot(K.T, K)+(lambda_**2.)*np.dot(L.T, L)),np.dot(K.T, S))
 
     return P_lambda
 
+def L_curve(K, S, lambda_array, L = None):
+    '''Generate Tikhonov L-curve 
+
+    Args:
+        K (numpy.ndarray): Kernel Matrix
+        S (numpy.ndarray): Experimental DEER trace
+        lambda_ (numpy.ndarray): Array of Regularization parameters
+        operator (None, numpy.ndarray): Tikhonov regularization operator, uses identity if argument is None
+
+    Returns:
+        rho_array (numpy.ndarray): Residual Norm
+        eta_array (numpy.ndarray): Solution Norm
+    '''
+
+    rho_list = []
+    eta_list = []
+    for lambda_ in lambda_array:
+        P_lambda = tikhonov(K, S, lambda_, L = L)
+        rho_list.append(np.linalg.norm(S - np.dot(K, P_lambda)))
+        eta_list.append(np.linalg.norm(P_lambda))
+    
+    rho_array = np.array(rho_list)
+    eta_array = np.array(eta_list)
+
+    return rho_array, eta_array
+
+def maximum_entropy(K, S, lambda_):
+    '''Maximum Entropy method for determining P(r)
+
+    Args:
+        K (numpy.ndarray): Kernel Matrix
+        S (numpy.ndarray): Data array
+        lambda_ (float): 
+    '''
+
+    def min_func(P, K, S, lambda_):
+        res = np.linalg.norm(np.dot(K, P) - S)**2. + (lambda_**2.)*np.sum((P*np.log(P)))
+        print(res)
+        return res
+
+    x0 = tikhonov(K, S, lambda_)
+    x0[x0<=0.] = 1.e-3
+#    x0 = np.ones(len(x0))
+
+    print(x0)
+    bounds = tuple(zip(np.zeros(len(x0)),100.*np.ones(len(x0))))
+    print(bounds)
+
+    cons = ({'type':'ineq','fun':lambda x: 0})
+
+    output = minimize(min_func,x0,args = (K, S, lambda_),method = 'Nelder-Mead',bounds = bounds,constraints = cons)
+
+    P_lambda = output['x']
+
+    return P_lambda
+
+def model_free(K, S, lambda_, L = None):
+    '''Maximum Entropy method for determining P(r)
+
+    Args:
+        K (numpy.ndarray): Kernel Matrix
+        S (numpy.ndarray): Data array
+        lambda_ (float): 
+        L (func): operator
+    '''
+
+    def min_func(P, K, S, lambda_, L):
+        res = np.linalg.norm(np.dot(K, P) - S)**2. + (lambda_**2.) * (np.linalg.norm(np.dot(L, P))**2.)
+        print(res)
+        return res
+
+    if L == None:
+        L = np.eye(np.shape(K)[1])
+
+    x0 = tikhonov(K, S, lambda_)
+    x0[x0<=0.] = 1.e-3
+#    x0 = np.ones(len(x0))
+
+    print(x0)
+    bounds = tuple(zip(np.zeros(len(x0)),100.*np.ones(len(x0))))
+    print(bounds)
+
+    cons = ({'type':'ineq','fun':lambda x: 0})
+
+    output = minimize(min_func,x0,args = (K, S, lambda_, L),method = 'Nelder-Mead',bounds = bounds,constraints = cons)
+
+    P_lambda = output['x']
+
+    return P_lambda
+
+    
 def gaussian(r,sigma,mu):
     '''Return Gaussian Distribution from given distance array, standard deviation, and mean distance
 
@@ -213,8 +304,8 @@ def gaussian(r,sigma,mu):
 if __name__ == '__main__':
     from matplotlib.pylab import *
 
-    t = np.r_[-0.1e-6:5e-6:200j]
-    r = np.r_[1.5e-9:8e-9:200j]
+    t = np.r_[-0.1e-6:5e-6:500j]
+    r = np.r_[1.5e-9:8e-9:100j]
 
     b = background(t, 10e-6, 10.e3, 10.e3, d = 3.)
     x0 = background_x0(b,t)
@@ -238,13 +329,31 @@ if __name__ == '__main__':
 
     deer = np.dot(kernel_matrix,gaussian_dist)
     deer = deer / np.max(deer)
-    noise = 0.05*np.random.randn(len(deer))
+    noise = 0.001*np.random.randn(len(deer))
     data = deer + noise
 
-    P_calc = tikhonov(kernel_matrix,data,2.)
+    P_calc = tikhonov(kernel_matrix,data,5.)
     P_calc = P_calc/np.max(P_calc)
     gaussian_dist = gaussian_dist / np.max(gaussian_dist)
 
+    lambda_array = np.logspace(-4,2,100)
+
+    residual_norm, solution_norm = L_curve(kernel_matrix, data, lambda_array)
+
+#    P_max_entropy = maximum_entropy(kernel_matrix,data,20.)
+    P_max_entropy = model_free(kernel_matrix,data,5.)
+
+    figure('maximum entropy')
+    plot(r,P_max_entropy)
+
+    figure('maximum entropy fit')
+    deer = np.dot(kernel_matrix,P_max_entropy)
+    plot(t,data)
+    plot(t,deer,'r-')
+
+
+    figure()
+    loglog(residual_norm,solution_norm)
 
     figure()
     plot(t*1e6,trace)
