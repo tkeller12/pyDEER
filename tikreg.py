@@ -180,14 +180,41 @@ def tikhonov(K, S, lambda_ = 1.0, L = None):
         K (numpy.ndarray): Kernel Matrix
         S (numpy.ndarray): Experimental DEER trace
         lambda_ (float): Regularization parameter
-        operator (None, numpy.ndarray): Tikhonov regularization operator, uses identity if argument is None
+        L (None, numpy.ndarray): Tikhonov regularization operator, uses identity if argument is None
+
+    +-------------------+----------------------+
+    |Operator (L)       |Description           |
+    +===================+======================+
+    |'Identity'         |Identity Matrix       |
+    +-------------------+----------------------+
+    |'1st Derivative'   |1st Derivative Matrix |
+    +-------------------+----------------------+
+    |'2nd Derivative'   |2nd Derivative Matrix |
+    +-------------------+----------------------+
+
     '''
     # Select Real Part
     S = np.real(S)
 
     # Set Operator for Tikhonov Regularization
-    if L == None:
-        L = np.eye(np.shape(K)[1])
+    n = np.shape(K)[1]
+    if L == None or L == 'Identity':
+        L = np.eye(n)
+    elif L == '1st Derivative':
+        L = np.diag(-1.*np.ones(n),k = 0)
+        L += np.diag(1.*np.ones(n-1),k = 1)
+
+    elif L == '2nd Derivative':
+        n = np.shape(K)[1]
+#        L = np.zeros((n,n))
+        L = np.diag(1.*np.ones(n),k = 0)
+        L += np.diag(-2.*np.ones(n-1),k = 1)
+        L += np.diag(1.*np.ones(n-2),k = 2)
+
+#        L = L[:,0:n-2]
+#        L = L[0:n-2,:]
+#        print(L)
+
 
     P_lambda = np.dot(np.linalg.inv(np.dot(K.T, K)+(lambda_**2.)*np.dot(L.T, L)),np.dot(K.T, S))
 
@@ -329,11 +356,16 @@ if __name__ == '__main__':
 
     deer = np.dot(kernel_matrix,gaussian_dist)
     deer = deer / np.max(deer)
-    noise = 0.001*np.random.randn(len(deer))
+    noise = 0.01*np.random.randn(len(deer))
     data = deer + noise
 
-    P_calc = tikhonov(kernel_matrix,data,5.)
+    P_calc = tikhonov(kernel_matrix,data,5.,L = '1st Derivative')
     P_calc = P_calc/np.max(P_calc)
+
+    figure()
+    plot(r,P_calc)
+    show()
+
     gaussian_dist = gaussian_dist / np.max(gaussian_dist)
 
     lambda_array = np.logspace(-4,2,100)

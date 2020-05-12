@@ -93,24 +93,24 @@ def save_shapes(pulse_shapes, filename):
                 f.write('end shape%i\n'%(int(num)))
 
 def adiabatic(tp,BW,beta,resolution = resolution):
-    '''
-    Make Adiabatic Pulse Shape based on Hyperbolic Secant pulse
-    -----------------------------------------------------
-    input ->
-    tp: pulse length in ns
-    BW: pulse bandwidth in MHz
-    beta: truncation parameter, automatically divided by tp
+    ''' Make Adiabatic Pulse Shape based on Hyperbolic Secant pulse
 
-    output -> 
-    t: time
-    pulse: 1ns resolution pulse 
+    Args:
+        tp (float): pulse length
+        BW (float): pulse bandwidth
+        beta (float): 
+        resolution (float): pulse resolution
+
+    Returns:
+        t (numpy.ndarray): time axes of pulse
     '''
 
     beta = float(beta)/tp
     mu = np.pi*BW/beta
     
-    t = np.r_[-0.5*tp:0.5*tp:resolution]
-    pulse = (np.sech(beta*t))**(1.+1.j*mu)
+    t = np.r_[0:tp:resolution]
 
-    return t,pulse
+    pulse = (np.sech(beta*(t-0.5*tp)))**(1.+1.j*mu)
+
+    return t, pulse
 
