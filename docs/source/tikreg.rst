@@ -6,5 +6,5 @@ tikreg
 Functions
 ---------
 
-.. automodule:: tikreg
+.. automodule:: pyDEER.tikreg
    :members:

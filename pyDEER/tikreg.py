@@ -169,6 +169,45 @@ def fit_background(data,t,background_function = background,t_min = 0.):
 
     return fit
 
+def operator(n,L):
+    '''Return operator for Regularization
+
+    Args:
+        n (int): Number of points in Kernal distance dimension
+        L (str, numpy.ndarray): String identifying name of operator or numpy array for operator to pass through function
+
+    Returns:
+        L (numpy.ndarray): Regularization operator as numpy array
+
+
+    +-------------------+----------------------+
+    |Operator (L)       |Description           |
+    +===================+======================+
+    |'Identity'         |Identity Matrix       |
+    +-------------------+----------------------+
+    |'1st Derivative'   |1st Derivative Matrix |
+    +-------------------+----------------------+
+    |'2nd Derivative'   |2nd Derivative Matrix |
+    +-------------------+----------------------+
+
+    '''
+    if L == None or L == 'Identity':
+        L = np.eye(n)
+    elif L == '1st Derivative':
+        L = np.diag(-1.*np.ones(n),k = 0)
+        L += np.diag(1.*np.ones(n-1),k = 1)
+    elif L == '2nd Derivative':
+#        L = np.zeros((n,n))
+        L = np.diag(1.*np.ones(n),k = 0)
+        L += np.diag(-2.*np.ones(n-1),k = 1)
+        L += np.diag(1.*np.ones(n-2),k = 2)
+
+#        L = L[:,0:n-2]
+#        L = L[0:n-2,:]
+#        print(L)
+
+    return L
+
 
 def tikhonov(K, S, lambda_ = 1.0, L = None):
     '''Perform Tikhonov Regularization
@@ -182,39 +221,15 @@ def tikhonov(K, S, lambda_ = 1.0, L = None):
         lambda_ (float): Regularization parameter
         L (None, numpy.ndarray): Tikhonov regularization operator, uses identity if argument is None
 
-    +-------------------+----------------------+
-    |Operator (L)       |Description           |
-    +===================+======================+
-    |'Identity'         |Identity Matrix       |
-    +-------------------+----------------------+
-    |'1st Derivative'   |1st Derivative Matrix |
-    +-------------------+----------------------+
-    |'2nd Derivative'   |2nd Derivative Matrix |
-    +-------------------+----------------------+
-
     '''
     # Select Real Part
     S = np.real(S)
 
     # Set Operator for Tikhonov Regularization
     n = np.shape(K)[1]
-    if L == None or L == 'Identity':
-        L = np.eye(n)
-    elif L == '1st Derivative':
-        L = np.diag(-1.*np.ones(n),k = 0)
-        L += np.diag(1.*np.ones(n-1),k = 1)
 
-    elif L == '2nd Derivative':
-        n = np.shape(K)[1]
-#        L = np.zeros((n,n))
-        L = np.diag(1.*np.ones(n),k = 0)
-        L += np.diag(-2.*np.ones(n-1),k = 1)
-        L += np.diag(1.*np.ones(n-2),k = 2)
-
-#        L = L[:,0:n-2]
-#        L = L[0:n-2,:]
-#        print(L)
-
+    # Determine Operator for Regularization
+    L = operator(n,L)
 
     P_lambda = np.dot(np.linalg.inv(np.dot(K.T, K)+(lambda_**2.)*np.dot(L.T, L)),np.dot(K.T, S))
 
@@ -265,7 +280,7 @@ def maximum_entropy(K, S, lambda_):
 #    x0 = np.ones(len(x0))
 
     print(x0)
-    bounds = tuple(zip(np.zeros(len(x0)),100.*np.ones(len(x0))))
+    bounds = tuple(zip(np.zeros(len(x0)),np.inf*np.ones(len(x0))))
     print(bounds)
 
     cons = ({'type':'ineq','fun':lambda x: 0})
@@ -288,23 +303,21 @@ def model_free(K, S, lambda_, L = None):
 
     def min_func(P, K, S, lambda_, L):
         res = np.linalg.norm(np.dot(K, P) - S)**2. + (lambda_**2.) * (np.linalg.norm(np.dot(L, P))**2.)
-        print(res)
         return res
 
-    if L == None:
-        L = np.eye(np.shape(K)[1])
+    n = np.shape(K)[1]
+
+    # Determine Operator for Regularization
+    L = operator(n,L)
 
     x0 = tikhonov(K, S, lambda_)
     x0[x0<=0.] = 1.e-3
-#    x0 = np.ones(len(x0))
 
-    print(x0)
-    bounds = tuple(zip(np.zeros(len(x0)),100.*np.ones(len(x0))))
-    print(bounds)
+    bounds = tuple(zip(np.zeros(len(x0)),np.inf*np.ones(len(x0))))
 
-    cons = ({'type':'ineq','fun':lambda x: 0})
+#    cons = ({'type':'ineq','fun':lambda x: 0})
 
-    output = minimize(min_func,x0,args = (K, S, lambda_, L),method = 'Nelder-Mead',bounds = bounds,constraints = cons)
+    output = minimize(min_func,x0,args = (K, S, lambda_, L),bounds = bounds,options = {'disp':True})
 
     P_lambda = output['x']
 

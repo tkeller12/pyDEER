@@ -6,5 +6,5 @@ awg
 Functions
 ---------
 
-.. automodule:: awg
+.. automodule:: pyDEER.awg
    :members:

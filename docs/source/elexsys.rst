@@ -6,5 +6,5 @@ elexsys
 Functions
 ---------
 
-.. automodule:: elexsys
+.. automodule:: pyDEER.elexsys
    :members:
