@@ -270,22 +270,31 @@ def maximum_entropy(K, S, lambda_):
         lambda_ (float): 
     '''
 
+#    def min_func(P, K, S, lambda_,x0):
     def min_func(P, K, S, lambda_):
-        res = np.linalg.norm(np.dot(K, P) - S)**2. + (lambda_**2.)*np.sum((P*np.log(P)))
-        print(res)
+        res = np.linalg.norm(np.dot(K, P) - S)**2. + (lambda_**2.)*np.sum((P*np.log((P))))
+#        res = np.linalg.norm(np.dot(K, P) - S)**2. + (lambda_**2.)*np.sum((P*np.log((P/x0)) + x0/np.exp(1)))
         return res
 
     x0 = tikhonov(K, S, lambda_)
-    x0[x0<=0.] = 1.e-3
+    x0[x0<=0.] = 1.e-5
+
+    n = np.shape(K)[1]
+    x0 = np.ones(n)
 #    x0 = np.ones(len(x0))
 
-    print(x0)
-    bounds = tuple(zip(np.zeros(len(x0)),np.inf*np.ones(len(x0))))
-    print(bounds)
+#    print(x0)
+#    bounds = tuple(zip(np.zeros(len(x0)),np.inf*np.ones(len(x0))))
+#    print(bounds)
+#
+#    cons = ({'type':'ineq','fun':lambda x: 0})
 
-    cons = ({'type':'ineq','fun':lambda x: 0})
+#    output = minimize(min_func, x0, args = (K, S, lambda_), method = 'Nelder-Mead', bounds = bounds, constraints = cons)
+#    output = minimize(min_func, x0, args = (K, S, lambda_,x0), bounds = bounds)
+#    output = minimize(min_func, x0, args = (K, S, lambda_,x0), method = 'Nelder-Mead', options = {'disp':True})
 
-    output = minimize(min_func,x0,args = (K, S, lambda_),method = 'Nelder-Mead',bounds = bounds,constraints = cons)
+#    output = minimize(min_func, x0, args = (K, S, lambda_), method = 'Nelder-Mead', options = {'disp':True})
+    output = minimize(min_func, x0, args = (K, S, lambda_), options = {'disp':True})
 
     P_lambda = output['x']
 
@@ -311,13 +320,13 @@ def model_free(K, S, lambda_, L = None):
     L = operator(n,L)
 
     x0 = tikhonov(K, S, lambda_)
-    x0[x0<=0.] = 1.e-3
+    x0[x0<=0.] = 1.e-5
 
-    bounds = tuple(zip(np.zeros(len(x0)),np.inf*np.ones(len(x0))))
+    bounds = tuple(zip(np.zeros(len(x0)), np.inf*np.ones(len(x0))))
 
 #    cons = ({'type':'ineq','fun':lambda x: 0})
 
-    output = minimize(min_func,x0,args = (K, S, lambda_, L),bounds = bounds,options = {'disp':True})
+    output = minimize(min_func, x0, args = (K, S, lambda_, L), bounds = bounds, options = {'disp':True})
 
     P_lambda = output['x']
 
