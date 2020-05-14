@@ -144,14 +144,6 @@ def fit_background(data,t,background_function = background,t_min = 0.):
     '''
 
     def res(x,data,t):
-        '''Calculate Residual
-
-        Args:
-            x (list): List of fitting parameters
-            data (numpy.ndarray): Array of data values
-            t (numpy.ndarray): Array of time values
-        '''
-
         residual = data - background_function(t,*x)
         return residual
 
@@ -197,14 +189,9 @@ def operator(n,L):
         L = np.diag(-1.*np.ones(n),k = 0)
         L += np.diag(1.*np.ones(n-1),k = 1)
     elif L == '2nd Derivative':
-#        L = np.zeros((n,n))
         L = np.diag(1.*np.ones(n),k = 0)
         L += np.diag(-2.*np.ones(n-1),k = 1)
         L += np.diag(1.*np.ones(n-2),k = 2)
-
-#        L = L[:,0:n-2]
-#        L = L[0:n-2,:]
-#        print(L)
 
     return L
 
@@ -221,6 +208,7 @@ def tikhonov(K, S, lambda_ = 1.0, L = None):
         lambda_ (float): Regularization parameter
         L (None, numpy.ndarray): Tikhonov regularization operator, uses identity if argument is None
 
+    Returns: (numpy.ndarray): Distance distribution from Tikhonov regularization
     '''
     # Select Real Part
     S = np.real(S)
@@ -268,33 +256,23 @@ def maximum_entropy(K, S, lambda_):
         K (numpy.ndarray): Kernel Matrix
         S (numpy.ndarray): Data array
         lambda_ (float): 
+
+    Returns:
+        P_lambda (numpy.ndarray): Distance distribution minimized by maximum entropy method.
     '''
 
-#    def min_func(P, K, S, lambda_,x0):
     def min_func(P, K, S, lambda_):
-        res = np.linalg.norm(np.dot(K, P) - S)**2. + (lambda_**2.)*np.sum((P*np.log((P))))
-#        res = np.linalg.norm(np.dot(K, P) - S)**2. + (lambda_**2.)*np.sum((P*np.log((P/x0)) + x0/np.exp(1)))
+        res = np.linalg.norm(np.dot(K, P) - S)**2. + (lambda_**2.)*np.sum((P*np.log((P/x0)) + x0/np.exp(1)))
         return res
 
     x0 = tikhonov(K, S, lambda_)
     x0[x0<=0.] = 1.e-5
 
     n = np.shape(K)[1]
-    x0 = np.ones(n)
-#    x0 = np.ones(len(x0))
 
-#    print(x0)
-#    bounds = tuple(zip(np.zeros(len(x0)),np.inf*np.ones(len(x0))))
-#    print(bounds)
-#
-#    cons = ({'type':'ineq','fun':lambda x: 0})
+    bounds = tuple(zip(1e-15*np.ones(n),np.inf*np.ones(n)))
 
-#    output = minimize(min_func, x0, args = (K, S, lambda_), method = 'Nelder-Mead', bounds = bounds, constraints = cons)
-#    output = minimize(min_func, x0, args = (K, S, lambda_,x0), bounds = bounds)
-#    output = minimize(min_func, x0, args = (K, S, lambda_,x0), method = 'Nelder-Mead', options = {'disp':True})
-
-#    output = minimize(min_func, x0, args = (K, S, lambda_), method = 'Nelder-Mead', options = {'disp':True})
-    output = minimize(min_func, x0, args = (K, S, lambda_), options = {'disp':True})
+    output = minimize(min_func, x0, args = (K, S, lambda_), method = 'SLSQP', bounds = bounds, options = {'disp':True})
 
     P_lambda = output['x']
 
