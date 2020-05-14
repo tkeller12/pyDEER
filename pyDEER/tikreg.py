@@ -200,7 +200,7 @@ def tikhonov(K, S, lambda_ = 1.0, L = None):
     '''Perform Tikhonov Regularization
 
     .. math::
-        P_\lambda = {(K^TK + \lambda L^TL)}^{-1} K^TS
+        P_\lambda = {(K^TK + \lambda^2 L^TL)}^{-1} K^TS
 
     Args:
         K (numpy.ndarray): Kernel Matrix
@@ -208,7 +208,8 @@ def tikhonov(K, S, lambda_ = 1.0, L = None):
         lambda_ (float): Regularization parameter
         L (None, numpy.ndarray): Tikhonov regularization operator, uses identity if argument is None
 
-    Returns: (numpy.ndarray): Distance distribution from Tikhonov regularization
+    Returns: 
+        P_lambda (numpy.ndarray): Distance distribution from Tikhonov regularization
     '''
     # Select Real Part
     S = np.real(S)
@@ -230,11 +231,15 @@ def L_curve(K, S, lambda_array, L = None):
         K (numpy.ndarray): Kernel Matrix
         S (numpy.ndarray): Experimental DEER trace
         lambda_ (numpy.ndarray): Array of Regularization parameters
-        operator (None, numpy.ndarray): Tikhonov regularization operator, uses identity if argument is None
+        L (None, numpy.ndarray): Tikhonov regularization operator, uses identity if argument is None
 
     Returns:
-        rho_array (numpy.ndarray): Residual Norm
-        eta_array (numpy.ndarray): Solution Norm
+        (tuple): tuple containing:
+        
+            rho_array (numpy.ndarray): Residual Norm
+
+            eta_array (numpy.ndarray): Solution Norm
+
     '''
 
     rho_list = []
@@ -251,6 +256,9 @@ def L_curve(K, S, lambda_array, L = None):
 
 def maximum_entropy(K, S, lambda_):
     '''Maximum Entropy method for determining P(r)
+
+    .. math::
+        \Phi_{ME}[P] = \|K P(r) - S\|^2 + \lambda^2 \\times \int [P(r) \ln \\frac{P(r)}{P_0(r)} + \\frac{P_0(r)}{e}] dr \\Rightarrow \min
 
     Args:
         K (numpy.ndarray): Kernel Matrix
@@ -279,13 +287,19 @@ def maximum_entropy(K, S, lambda_):
     return P_lambda
 
 def model_free(K, S, lambda_, L = None):
-    '''Maximum Entropy method for determining P(r)
+    '''Model Free P(r) with non-negative constraints
+
+    .. math::
+        \Phi_{MF}[P] = \|K P(r) - S\|^2 + \lambda^2 \| LP \|^2 \\Rightarrow \min
 
     Args:
         K (numpy.ndarray): Kernel Matrix
         S (numpy.ndarray): Data array
-        lambda_ (float): 
-        L (func): operator
+        lambda_ (float): Regularization parameter
+        L (str, numpy.ndarray): Operator for regularization
+
+    Returns:
+        P_lambda (numpy.ndarray): Distance distribution
     '''
 
     def min_func(P, K, S, lambda_, L):
