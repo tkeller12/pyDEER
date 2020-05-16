@@ -197,15 +197,17 @@ def operator(n, L):
     +-------------------+----------------------+
 
     '''
-    if L == None or L == 'Identity':
+    if L == 'Identity':
         L = np.eye(n)
     elif L == '1st Derivative':
         L = np.diag(-1.*np.ones(n),k = 0)
         L += np.diag(1.*np.ones(n-1),k = 1)
-    elif L == '2nd Derivative':
+        L = L[:-1,:]
+    elif (L == None) or (L == '2nd Derivative'):
         L = np.diag(1.*np.ones(n),k = 0)
         L += np.diag(-2.*np.ones(n-1),k = 1)
         L += np.diag(1.*np.ones(n-2),k = 2)
+        L = L[:-2,:]
 
     return L
 
@@ -277,7 +279,7 @@ def maximum_entropy(K, S, lambda_):
     Args:
         K (numpy.ndarray): Kernel Matrix
         S (numpy.ndarray): Data array
-        lambda_ (float): 
+        lambda_ (float): Regularization parameter
 
     Returns:
         P_lambda (numpy.ndarray): Distance distribution minimized by maximum entropy method.
@@ -342,8 +344,15 @@ def model_free(K, S, lambda_, L = None):
 def gaussian(r, sigma, mu, Normalize = False):
     '''Return Gaussian Distribution from given distance array, standard deviation, and mean distance
 
+    If Normalize = True
+
     .. math::
         \\frac{1}{\sqrt{2 \pi {\sigma}^2}} e^{-{(r-\mu)}^2/(2\sigma^2)}
+
+    If Normalize = False
+
+    .. math::
+        e^{-{(r-\mu)}^2/(2\sigma^2)}
 
     Args:
         r (numpy.ndarray): Numpy array of distance values
@@ -361,10 +370,10 @@ def gaussian(r, sigma, mu, Normalize = False):
     return gaussian_dist
 
 def gaussians(r, x):
-    '''Return Gaussian Distribution from given distance array, standard deviation, and mean distance
+    '''Return sum of Gaussian distributions from given distance array and list of lists defining amplitude, standard deviation, and mean distance for each Gaussian
 
     .. math::
-        \sum_{i = 1}^{N} \\frac{A_i}{\sqrt{2 \pi {\sigma_i}^2}} e^{-{(r-\mu_i)}^2/(2\sigma_i^2)}
+        \sum_{i = 1}^{N} A_i e^{-{(r-\mu_i)}^2/(2\sigma_i^2)}
 
     Args:
         r (numpy.ndarray): Numpy array of distance values
@@ -453,79 +462,4 @@ def model_gaussian(K, S, r, x0 = None):
     return P_gauss, x_fit
 
 if __name__ == '__main__':
-    from matplotlib.pylab import *
-
-    t = np.r_[-0.1e-6:5e-6:500j]
-    r = np.r_[1.5e-9:8e-9:100j]
-
-    b = background(t, 10e-6, 10.e3, 10.e3, d = 3.)
-    x0 = background_x0(b,t)
-    print(x0)
-    b_guess = background(t,*x0)
-
-    figure()
-    plot(t,b)
-    plot(t,b_guess,'r-')
-
-    data = b
-    fit = fit_background(data,t)
-
-    figure()
-    plot(t,b)
-    plot(t,fit,'r--')
-
-    trace = deer_trace(t,4e-9,angles = 100)
-    gaussian_dist = gaussian(r,0.5e-9,5e-9)
-    kernel_matrix = kernel(t,r,angles = 2000)
-
-    deer = np.dot(kernel_matrix,gaussian_dist)
-    deer = deer / np.max(deer)
-    noise = 0.01*np.random.randn(len(deer))
-    data = deer + noise
-
-    P_calc = tikhonov(kernel_matrix,data,5.,L = '1st Derivative')
-    P_calc = P_calc/np.max(P_calc)
-
-    figure()
-    plot(r,P_calc)
-    show()
-
-    gaussian_dist = gaussian_dist / np.max(gaussian_dist)
-
-    lambda_array = np.logspace(-4,2,100)
-
-    residual_norm, solution_norm = L_curve(kernel_matrix, data, lambda_array)
-
-#    P_max_entropy = maximum_entropy(kernel_matrix,data,20.)
-    P_max_entropy = model_free(kernel_matrix,data,5.)
-
-    figure('maximum entropy')
-    plot(r,P_max_entropy)
-
-    figure('maximum entropy fit')
-    deer = np.dot(kernel_matrix,P_max_entropy)
-    plot(t,data)
-    plot(t,deer,'r-')
-
-
-    figure()
-    loglog(residual_norm,solution_norm)
-
-    figure()
-    plot(t*1e6,trace)
-    ylim(-1.1,1.1)
-    xlabel('Time (us)')
-    figure()
-    plot(t*1e6,kernel_matrix)
-    ylim(-1.1,1.1)
-    xlabel('Time (us)')
-    figure()
-    plot(r,gaussian_dist)
-    figure()
-    plot(t*1e6,deer,'b-')
-    plot(t*1e6,data,'g-')
-    figure()
-    plot(r,gaussian_dist,'b-',label = 'exact')
-    plot(r,P_calc,'r-',label = 'tik')
-    show()
-
+    pass
