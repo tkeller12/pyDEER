@@ -2,7 +2,7 @@ import numpy as np
 import os
 from scipy.optimize import least_squares, minimize
 
-def kernel(t,r,angles = 5000):
+def kernel(t, r, angles = 5000):
     '''Return the Kernel Matrix.
 
     .. math::
@@ -36,7 +36,7 @@ def kernel(t,r,angles = 5000):
 
     return K
 
-def load_kernel(filename = 'default_kernel.csv',directory = 'kernels'):
+def load_kernel(filename = 'default_kernel.csv', directory = 'kernels'):
     '''Import Kernel Matrix
     '''
     full_path = os.path.join(directory, filename)
@@ -55,7 +55,7 @@ def save_kernel(k, filename, directory = 'kernels'):
 
     np.savetxt(full_path,k,delimiter = ',')
 
-def deer_trace(t,r,angles=1000):
+def deer_trace(t, r, angles=1000):
     '''Calculate the DEER trace corresponding to a given time axes and distance value
 
     Args:
@@ -92,7 +92,7 @@ def deer_trace(t,r,angles=1000):
     trace = trace / angles
     return trace
 
-def background(t,tau, A, B, d = 3.):
+def background(t, tau, A, B, d = 3.):
     '''DEER Background function
 
     .. math::
@@ -111,7 +111,7 @@ def background(t,tau, A, B, d = 3.):
     background_signal = A + B*np.exp(-1*(np.abs(t)**(d/3.))/tau)
     return background_signal
 
-def background_x0(data,t):
+def background_x0(data, t):
     '''Guess initial parameters for background function
 
     Args:
@@ -130,7 +130,7 @@ def background_x0(data,t):
     x0 = [tau, A, B]
     return x0
 
-def fit_background(data,t,background_function = background,t_min = 0.):
+def fit_background(data, t, background_function = background, t_min = 0.):
     '''Fit DEER data to background function
 
     Args:
@@ -143,7 +143,7 @@ def fit_background(data,t,background_function = background,t_min = 0.):
         fit (numpy.ndarray): Fit of data
     '''
 
-    def res(x,data,t):
+    def res(x, data, t):
         residual = data - background_function(t,*x)
         return residual
 
@@ -161,7 +161,7 @@ def fit_background(data,t,background_function = background,t_min = 0.):
 
     return fit
 
-def operator(n,L):
+def operator(n, L):
     '''Return operator for Regularization
 
     Args:
@@ -325,7 +325,7 @@ def model_free(K, S, lambda_, L = None):
     return P_lambda
 
     
-def gaussian(r,sigma,mu):
+def gaussian(r, sigma, mu, Normalize = False):
     '''Return Gaussian Distribution from given distance array, standard deviation, and mean distance
 
     .. math::
@@ -335,12 +335,108 @@ def gaussian(r,sigma,mu):
         r (numpy.ndarray): Numpy array of distance values
         sigma (float): Standard deviation
         mu (float): Mean distance
+        Normalize (bool): If True, the integral of Gaussian is normalized to 1
 
     Returns:
         gaussian_dist (numpy.ndarray): Gaussian distribution
     '''
-    gaussian_dist = (1./(np.sqrt(2*np.pi*(sigma**2.)))) * np.exp(-1*(r-mu)**2./(2.*(sigma**2.)))
+    if Normalize:
+        gaussian_dist = (1./(np.sqrt(2*np.pi*(sigma**2.)))) * np.exp(-1*(r-mu)**2./(2.*(sigma**2.)))
+    else:
+        gaussian_dist = np.exp(-1*(r-mu)**2./(2.*(sigma**2.)))
     return gaussian_dist
+
+def gaussians(r, x):
+    '''Return Gaussian Distribution from given distance array, standard deviation, and mean distance
+
+    .. math::
+        \sum_{i = 1}^{N} \\frac{A_i}{\sqrt{2 \pi {\sigma_i}^2}} e^{-{(r-\mu_i)}^2/(2\sigma_i^2)}
+
+    Args:
+        r (numpy.ndarray): Numpy array of distance values
+        x (list): list of lists. Each gaussian is definied by a list of 3 parameters.
+
+    Returns:
+        gaussian_dist (numpy.ndarray): Gaussian distribution
+    '''
+
+    gaussian_dist = np.zeros(len(r))
+    for gaussian_parameters in x:
+        A = gaussian_parameters[0]
+        sigma = gaussian_parameters[1]
+        mu = gaussian_parameters[2]
+
+        gaussian_dist += (A * gaussian(r, sigma, mu))
+
+    return gaussian_dist
+
+def model_gaussian(K, S, r, x0 = None):
+    '''Gaussian based fit for distance distribution
+
+    Args:
+        K (numpy.ndarray): Kernel Matrix
+        S (numpy.ndarray): Data array
+        r (numpy.ndarray): Array of distance values
+        x0 (None, List): Initial guess. If None, the initial guess is automatically chosen based on Tikhonov regularization P(r)
+        
+    Returns:
+        tuple containing:
+        
+            P_gauss (numpy.ndarray): distance distribution
+
+            x_fit (dict): Dictionary of fitting parameters
+
+    '''
+
+    def min_func(x, K, S, r):
+
+        A = x[0]
+        sigma = x[1]
+        mu = x[2]
+
+        P_fit = A*gaussian(r,sigma,mu)
+        S_fit = np.dot(K,P_fit)
+
+        res = sum((S_fit - S)**2.)
+        return res
+
+    bounds = tuple(zip(np.zeros(3), np.inf*np.ones(3)))
+
+    if x0 == None:
+        P_lambda = tikhonov(K, S, lambda_ = 1.0, L = None)
+        A_0 = np.max(P_lambda) # Amplitude is maximum value
+        sigma_0 = 0.2e-9 # Sigma is this value
+        mu_0 = r[np.argmax(P_lambda)] # center is maximum
+        def guess_min_func(x, P_lambda, r):
+            A = x[0]
+            sigma = x[1]
+            mu = x[2]
+
+            res = sum((A * gaussian(r,sigma,mu) - P_lambda)**2.)
+            return res
+        x0 = [A_0, sigma_0, mu_0]
+        guess_output = minimize(guess_min_func, x0, args = (P_lambda, r),method = 'Nelder-Mead', bounds = bounds, options = {'disp':True})
+
+        A_0 = guess_output['x'][0]
+        sigma_0 = guess_output['x'][1]
+        mu_0 = guess_output['x'][2]
+
+        x0 = [A_0,sigma_0,mu_0]
+
+#    output = minimize(min_func, x0, args = (K, S, r), bounds = bounds, options = {'disp':True})
+    output = minimize(min_func, x0, args = (K, S, r), method = 'Nelder-Mead', options = {'disp':True})
+
+    A = output['x'][0]
+    sigma = output['x'][1]
+    mu = output['x'][2]
+    P_gauss = A * gaussian(r, sigma, mu)
+
+    x_fit = {}
+    x_fit['A'] = A
+    x_fit['sigma'] = sigma
+    x_fit['mu'] = mu
+
+    return P_gauss, x_fit
 
 if __name__ == '__main__':
     from matplotlib.pylab import *
