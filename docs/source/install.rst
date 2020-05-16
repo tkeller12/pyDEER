@@ -1,9 +1,9 @@
-=======
-install
-=======
+=================
+Installing pyDEER
+=================
 
 
-installing with pip
+Installing with pip
 -------------------
 
 pyDEER can be installed via pip:
@@ -17,12 +17,12 @@ The required packages should automatically be installed when installing through 
 Requirements
 ------------
 
-Python Version
+**Python Version**
 
 - Python >= 2.7
 - Python >= 3.6
 
-Packages
+**Packages**
 
 - scipy
 - numpy

@@ -20,7 +20,7 @@ def load_DSC(filename):
     '''Import Bruker ASCII Parameters .DSC File
 
     Args:
-        filename (str): Path to data.
+        filename (str): Path to parameters file in string format
 
     Returns:
         DSC_dict (dict): Dictionary of Descriptor Information in DSC file

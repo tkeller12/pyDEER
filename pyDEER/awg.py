@@ -63,37 +63,11 @@ def load_shape(filename):
 
     return pulse
 
-def save_shapes(pulse_shapes, filename):
-    '''Save a numpy array as csv format compatible with Xepr
-
-    Args:
-        pulse_shapes (numpy.ndarray,list): numpy array or list of numpy arrays defining pulse shape
-        filename (str): Filename to save data
-    '''
-
-    with open(filename,'w') as f:
-        num_ix = 0
-        for pulse_shape in pulse_shapes:
-            pulse_shape = np.array(pulse_shape)
-            num=nums[num_ix]
-            num_ix+=1
-
-            f.write('begin shape%i "Shape %i"\n'%(int(num),int(num)))
-
-            if pulse_shape.dtype is np.dtype(complex):
-                for ix, value in enumerate(pulse_shape):
-                    f.write('%0.4f,%0.04f\n'%(np.real(pulse_shape[ix]),np.imag(pulse_shape[ix])))
-            else:
-                for ix, value in enumerate(pulse_shape):
-                    f.write('%0.4f\n'%(pulse_shape[ix]))
-
-            if num_ix == len(pulse_shapes):
-                f.write('end shape%i'%(int(num)))
-            else:
-                f.write('end shape%i\n'%(int(num)))
-
 def adiabatic(tp,BW,beta,resolution = resolution):
     ''' Make Adiabatic Pulse Shape based on Hyperbolic Secant pulse
+
+    .. math::
+        \\text{sech} (\\beta (t - \\frac{t_p}{2}))^{1+i(\pi BW / \\beta)}
 
     Args:
         tp (float): pulse length
@@ -108,9 +82,119 @@ def adiabatic(tp,BW,beta,resolution = resolution):
     beta = float(beta)/tp
     mu = np.pi*BW/beta
     
-    t = np.r_[0:tp:resolution]
+    t = np.r_[0.:tp:resolution]
 
     pulse = (np.sech(beta*(t-0.5*tp)))**(1.+1.j*mu)
 
     return t, pulse
 
+def chirp(tp,BW,resolution = resolution):
+    '''Complex chirp pulse
+
+    .. math::
+        e^{i 2 \pi (k/2) (t - t_p/2)^2}
+
+    Args:
+        tp (float): Pulse length
+        BW (float): Bandwidth of pulse
+
+    Returns:
+        t (numpy.ndarray): Time axis of pulse
+        pulse (numpy.ndarray): Pulse shape
+    '''
+    k = BW/tp
+    t = np.r_[0.:tp:resolution]
+    pulse = np.exp(1.j*2.*np.pi*((k/2.)*((t-tp/2.)**2.)))
+    return t, pulse
+
+def wurst(tp,N,resolution = resolution):
+    '''Real value WURST envelope pulse shape
+
+    .. math::
+        1 - \\text{abs}(\cos(\\frac{\pi}{t_p} (t - \\frac{t_p}{2}) + \\frac{\pi}{2}))^N
+
+    Args:
+        tp (float): Pulse length
+        N (float): exponential 
+
+    Returns:
+        t (numpy.ndarray): Time axis of pulse
+        pulse (numpy.ndarray): Pulse shape
+    '''
+    t = np.r_[0.:tp:resolution]
+    pulse = (1. - np.abs(np.cos(np.pi*(t-tp/2.)/tp + np.pi/2.))**N) + 0j
+
+    return t,pulse
+
+def gaussian_pulse(tp,sigmas,resolution = resolution):
+    '''Gaussian pulse
+
+    .. math::
+        e^{- (t - t_p/2)^2 / (2 \sigma^2)}
+
+    Args:
+        tp (float): Pulse length
+        sigmas (float): Number of standard deviations where pulse is truncated
+
+    output -> 
+        t (numpy.ndarray): Time axis of pulsetime
+        pulse (numpy.ndarray): Pulse shape
+    '''
+    sigma = 0.5*tp/sigmas
+    t = np.r_[0.:tp:resolution]
+    pulse = np.exp(-1.*(t-tp/2.)**2./(2.*(sigma**2.))) + 0j
+    return t, pulse
+
+def sq_pulse(tp,t_length = 0.,resolution = resolution):
+    '''Square pulse
+
+    Args:
+        tp (float): Pulse length
+        t_length (float): Total length of time axis
+
+    Returns:
+        t (numpy.ndarray): Time axis
+        pulse (numpy.ndarray): Pulse shape
+
+    '''
+    if t_length > tp:
+        t = np.r_[0.:t_length:resolution]
+        pulse = np.zeros_like(t, dtype = complex)
+        for t_ix,t_value in enumerate(t):
+            if abs(t_value - tp/2.) < (tp/2.):
+                pulse[t_ix] = 1.
+    else:
+        t = np.r_[0.:tp:resolution]
+        pulse = np.ones_like(t, dtype = complex)
+    return t, pulse
+
+def plane_wave(tp,freq,resolution = resolution):
+    '''Complex plane wave pulse shape
+    '''
+    t = np.r_[0.:tp:resolution]
+    pulse = np.exp(1.j*2.*np.pi*freq*(t - tp/2.))
+    return t,pulse
+
+def sinc(tp, n, resolution = resolution):
+    '''Sinc pulse
+
+    .. math::
+        \\frac{\sin(2 \pi (n - 1) (t - \\frac{t_p}{2}) / \\frac{t_p}{2})}{(t - \\frac{t_p}{2}) / \\frac{t_p}{2}}
+
+    Args:
+        tp (float): Pulse length
+        n (float): Total sinc lobes, must be odd for full sinc
+    n is number of sinc lobes, should be odd for full sinc
+
+
+    Args:
+        tp (float): Pulse length
+
+    '''
+    t = np.r_[0.:tp:resolution]
+    pulse = np.sin((2.*n-1.)*np.pi*(t-tp/2.)/(0.5*tp))/((t-tp/2)/(0.5*tp))
+
+    return t,pulse
+
+if __name__ == '__main__':
+    pass
