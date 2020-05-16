@@ -2,6 +2,20 @@ import numpy as np
 import os
 from scipy.optimize import least_squares, minimize
 
+def add_noise(S,sigma):
+    '''Add noise to array
+    
+    Args:
+        S (numpy.ndarray): Array to add noise to
+        
+    Returns:
+        S_noisy (numpy.ndarray): Array with noise added
+    '''
+
+    S_noisy = S + sigma * np.random.randn(*np.shape(S))
+
+    return S_noisy
+
 def kernel(t, r, angles = 5000):
     '''Return the Kernel Matrix.
 
