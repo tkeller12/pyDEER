@@ -179,22 +179,24 @@ def sinc(tp, n, resolution = resolution):
     '''Sinc pulse
 
     .. math::
-        \\frac{\sin(2 \pi (n - 1) (t - \\frac{t_p}{2}) / \\frac{t_p}{2})}{(t - \\frac{t_p}{2}) / \\frac{t_p}{2}}
+        \\frac{\sin(\\frac{\pi}{2} (n + 1) (t - \\frac{t_p}{2}) / \\frac{t_p}{2})}{(t - \\frac{t_p}{2}) / \\frac{t_p}{2}}
 
     Args:
         tp (float): Pulse length
         n (float): Total sinc lobes, must be odd for full sinc
     n is number of sinc lobes, should be odd for full sinc
 
+    Returns:
+        t (numpy.ndarray): Time axis
+        pulse (numpy.ndarray): Pulse shape
 
-    Args:
-        tp (float): Pulse length
+
 
     '''
     t = np.r_[0.:tp:resolution]
-    pulse = np.sin((2.*n-1.)*np.pi*(t-tp/2.)/(0.5*tp))/((t-tp/2)/(0.5*tp))
+    pulse = np.sin(((n+1.)/2.)*np.pi*(t-tp/2.)/(0.5*tp))/((t-tp/2)/(0.5*tp))
 
-    return t,pulse
+    return t, pulse
 
 if __name__ == '__main__':
     pass
