@@ -126,7 +126,8 @@ To optimize the regularization parameter, a Tikhonov L-curve can be generated:
 .. code-block:: python
     
     # Define array of lambda values
-    lambda_array = np.r_[0.1:5:100j]
+    lambda_array = np.logspace(-2,2,100)
+
     residual_norm, solution_norm = deer.L_curve(K, S_noisy, lambda_array)
 
     figure('L-curve')
