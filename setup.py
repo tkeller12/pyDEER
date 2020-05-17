@@ -11,7 +11,7 @@ setuptools.setup(
     description='A Python Package for Fitting Double Electron-Electron Resonance Data',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='http://www.timothyjkeller.com/',
+    url='https://github.com/tkellerBridge12/pyDEER',
     packages=setuptools.find_packages(),
     install_requires = ['scipy','numpy'],
     classifiers=[
