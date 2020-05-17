@@ -12,6 +12,10 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/tkellerBridge12/pyDEER',
+    project_urls={
+        'Source Code':'https://github.com/tkellerBridge12/pyDEER',
+        'Documentation':'https://pydeer.readthedocs.io/',
+        },
     packages=setuptools.find_packages(),
     install_requires = ['scipy','numpy'],
     classifiers=[
