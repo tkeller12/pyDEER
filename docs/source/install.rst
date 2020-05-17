@@ -8,7 +8,7 @@ Installing with pip
 
 pyDEER can be installed via pip:
 
-.. code-block::
+.. code-block:: console
 
     python -m pip install pyDEER
 
@@ -27,7 +27,7 @@ Requirements
 - scipy
 - numpy
 
-.. code-block::
+.. code-block:: console
 
     python -m pip install scipy numpy
 
