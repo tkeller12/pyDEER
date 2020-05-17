@@ -5,13 +5,17 @@ with open('README.md','r') as f:
 
 setuptools.setup(
     name='pyDEER',
-    version='1.0.1',
+    version='1.0.2',
     author='Timothy Keller',
     author_email='tkeller@bridge12.com',
     description='A Python Package for Fitting Double Electron-Electron Resonance Data',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/tkellerBridge12/pyDEER',
+    project_urls={
+        'Source Code':'https://github.com/tkellerBridge12/pyDEER',
+        'Documentation':'https://pydeer.readthedocs.io/',
+        },
     packages=setuptools.find_packages(),
     install_requires = ['scipy','numpy'],
     classifiers=[
