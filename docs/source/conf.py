@@ -72,6 +72,7 @@ exclude_patterns = []
 pygments_style = 'sphinx'
 highlight_language = 'python3'
 
+add_module_names = False
 
 # -- Options for HTML output -------------------------------------------------
 

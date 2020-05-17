@@ -1,10 +1,10 @@
-======
-tikreg
-======
+=============
+tikreg Module
+=============
 
 
 Functions
 ---------
 
-.. automodule:: tikreg
+.. automodule:: pyDEER.tikreg
    :members:
