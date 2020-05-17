@@ -5,7 +5,7 @@ with open('README.md','r') as f:
 
 setuptools.setup(
     name='pyDEER',
-    version='1.0.2',
+    version='1.0.3',
     author='Timothy Keller',
     author_email='tkeller@bridge12.com',
     description='A Python Package for Fitting Double Electron-Electron Resonance Data',
