@@ -67,12 +67,12 @@ def adiabatic(tp, BW, beta, resolution = resolution):
     ''' Make Adiabatic Pulse Shape based on Hyperbolic Secant pulse
 
     .. math::
-        \\text{sech} (\\beta (t - \\frac{t_p}{2}))^{1+i(\pi BW / \\beta)}
+        \\text{sech} \\left( \\beta (t - \\frac{t_p}{2}) \\right) ^{1+i(\pi BW / \\beta)}
 
     Args:
         tp (float): pulse length
         BW (float): pulse bandwidth
-        beta (float): 
+        beta (float): truncation factor
         resolution (float): pulse resolution
 
     Returns: tuple
@@ -116,7 +116,7 @@ def wurst(tp, N, resolution = resolution):
     '''Real value WURST envelope pulse shape
 
     .. math::
-        1 - \\text{abs}(\cos(\\frac{\pi}{t_p} (t - \\frac{t_p}{2}) + \\frac{\pi}{2}))^N
+        1 - \\text{abs} \left( \cos \left( \\frac{\pi}{t_p} (t - \\frac{t_p}{2}) + \\frac{\pi}{2} \\right) \\right) ^N
 
     Args:
         tp (float): Pulse length
@@ -137,7 +137,7 @@ def gaussian_pulse(tp, sigmas, resolution = resolution):
     '''Gaussian pulse
 
     .. math::
-        e^{- (t - t_p/2)^2 / (2 \sigma^2)}
+        e^{- \\frac{1}{2} \left( \\frac{t - t_p/2}{\sigma} \\right)^2}
 
     Args:
         tp (float): Pulse length
@@ -182,7 +182,7 @@ def plane_wave(tp, f, resolution = resolution):
     '''Complex plane wave pulse shape
 
     .. math::
-        e^{i 2 \pi f (t - \\frac{t_p}{2})}
+        e^{i 2 \pi f \left( t - \\frac{t_p}{2} \\right) }
 
     Args:
         tp (float): Pulse length
@@ -202,7 +202,9 @@ def sinc(tp, n, resolution = resolution):
     '''Sinc pulse
 
     .. math::
-        \\frac{\sin(\\frac{\pi}{2} (n + 1) (t - \\frac{t_p}{2}) / \\frac{t_p}{2})}{(t - \\frac{t_p}{2}) / \\frac{t_p}{2}}
+        \\frac{\sin \left( \\frac{\pi}{2} (n + 1) x \\right) }{x}
+
+        x = \\frac{t-\\frac{t_p}{2}}{\\frac{t_p}{2}}
 
     Args:
         tp (float): Pulse length

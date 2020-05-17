@@ -10,7 +10,7 @@ def add_noise(S,sigma):
         sigma (float): Standard deviation of noise
         
     Returns:
-        S_noisy (numpy.ndarray): Array with noise added
+        numpy.ndarray: Array with noise added
     '''
 
     S_noisy = S + sigma * np.random.randn(*np.shape(S))
@@ -30,10 +30,10 @@ def kernel(t, r, angles = 5000):
         r (numpy.ndarray): Array of radius (distance) values in meters
 
     Returns:
-        kernel_matrix (numpy.ndarray): Numpy array of kernel. The first dimension is the time dimension. The second dimension is the distance dimension.
+        numpy.ndarray: Numpy array of kernel. The first dimension is the time dimension. The second dimension is the distance dimension.
 
     .. note::
-        The distance array (r) must have all values greater than zero.
+        The distance array (r) must have all values greater than zero to generate a proper kernel.
 
     .. warning::
         The number of angles must be carefully selected to ensure the Kernel matrix properly averages the angles for short distances.
@@ -75,11 +75,11 @@ def deer_trace(t, r, angles=1000):
 
     Args:
         t (numpy.ndarray): Time axes of DEER trace
-        r (float,int,numpy.ndarray): Distances value or values in meters
+        r (float, int, numpy.ndarray): Distances value or values in meters
         angles (int): Number of angles to average when generating DEER trace
 
     Returns:
-        trace (numpy.ndarray): DEER trace
+        numpy.ndarray: DEER trace
 
     Example::
 
@@ -121,7 +121,7 @@ def background(t, tau, A, B, d = 3.):
         d (float): dimensionality of background function
 
     Returns:
-        background_signal (numpy.ndarray)
+        numpy.ndarray: Background signal
     '''
     background_signal = A + B*np.exp(-1*(np.abs(t)**(d/3.))/tau)
     return background_signal
@@ -134,7 +134,7 @@ def background_x0(data, t):
         t (numpy.ndarray): Array of axes
 
     Returns:
-        x0 (list): List of parameters for fit initial guess
+        list: List of parameters for fit initial guess
     '''
 
     A = data[-1]
@@ -155,7 +155,7 @@ def fit_background(data, t, background_function = background, t_min = 0.):
         t_min (float): Start time for fit
 
     Returns:
-        fit (numpy.ndarray): Fit of data
+        numpy.ndarray: Fit of data
     '''
 
     def res(x, data, t):
@@ -194,7 +194,7 @@ def operator(n, L):
         L (str, numpy.ndarray): String identifying name of operator or numpy array for operator to pass through function
 
     Returns:
-        L (numpy.ndarray): Regularization operator as numpy array
+        numpy.ndarray: Regularization operator as numpy array
     '''
     if L == 'Identity':
         L = np.eye(n)
@@ -207,6 +207,8 @@ def operator(n, L):
         L += np.diag(-2.*np.ones(n-1),k = 1)
         L += np.diag(1.*np.ones(n-2),k = 2)
         L = L[:-2,:]
+    elif isinstance(L, str):
+        raise ValueError('Operator string not understood')
 
     return L
 
@@ -224,7 +226,7 @@ def tikhonov(K, S, lambda_ = 1.0, L = None):
         L (None, numpy.ndarray): Tikhonov regularization operator, uses 2nd derivative if argument is None
 
     Returns: 
-        P_lambda (numpy.ndarray): Distance distribution from Tikhonov regularization
+        numpy.ndarray: Distance distribution from Tikhonov regularization
     '''
     # Select Real Part
     S = np.real(S)
@@ -249,11 +251,11 @@ def L_curve(K, S, lambda_array, L = None):
         L (None, numpy.ndarray): Tikhonov regularization operator, uses 2nd derivative if argument is None
 
     Returns:
-        (tuple): tuple containing:
+        tuple: tuple containing:
         
-            rho_array (numpy.ndarray): Residual Norm
+            rho_array (*numpy.ndarray*): Residual Norm
 
-            eta_array (numpy.ndarray): Solution Norm
+            eta_array (*numpy.ndarray*): Solution Norm
 
     '''
 
@@ -281,7 +283,7 @@ def maximum_entropy(K, S, lambda_):
         lambda_ (float): Regularization parameter
 
     Returns:
-        P_lambda (numpy.ndarray): Distance distribution minimized by maximum entropy method.
+        numpy.ndarray: Distance distribution minimized by maximum entropy method.
     '''
 
     def min_func(P, K, S, lambda_):
@@ -314,7 +316,7 @@ def model_free(K, S, lambda_, L = None):
         L (str, numpy.ndarray): Operator for regularization
 
     Returns:
-        P_lambda (numpy.ndarray): Distance distribution
+        numpy.ndarray: Distance distribution from model free fit
     '''
 
     def min_func(P, K, S, lambda_, L):
@@ -330,8 +332,6 @@ def model_free(K, S, lambda_, L = None):
     x0[x0<=0.] = 1.e-5
 
     bounds = tuple(zip(np.zeros(len(x0)), np.inf*np.ones(len(x0))))
-
-#    cons = ({'type':'ineq','fun':lambda x: 0})
 
     output = minimize(min_func, x0, args = (K, S, lambda_, L), bounds = bounds, options = {'disp':True})
 
@@ -360,7 +360,7 @@ def gaussian(r, sigma, mu, Normalize = False):
         Normalize (bool): If True, the integral of Gaussian is normalized to 1
 
     Returns:
-        gaussian_dist (numpy.ndarray): Gaussian distribution
+        numpy.ndarray: Gaussian distribution
     '''
     if Normalize:
         gaussian_dist = (1./(np.sqrt(2*np.pi*(sigma**2.)))) * np.exp(-1*(r-mu)**2./(2.*(sigma**2.)))
@@ -379,7 +379,7 @@ def gaussians(r, x):
         x (list): list of lists. Each gaussian is definied by a list of 3 parameters.
 
     Returns:
-        gaussian_dist (numpy.ndarray): Gaussian distribution
+        numpy.ndarray: Gaussian distribution
     '''
 
     gaussian_dist = np.zeros(len(r))
@@ -402,11 +402,11 @@ def model_gaussian(K, S, r, x0 = None):
         x0 (None, List): Initial guess. If None, the initial guess is automatically chosen based on Tikhonov regularization P(r)
         
     Returns:
-        tuple containing:
+        tuple: tuple containing:
         
-            P_gauss (numpy.ndarray): distance distribution
+            P_gauss (*numpy.ndarray*): distance distribution
 
-            x_fit (dict): Dictionary of fitting parameters
+            x_fit (*dict*): Dictionary of fitting parameters
 
     '''
 
@@ -424,7 +424,7 @@ def model_gaussian(K, S, r, x0 = None):
 
     bounds = tuple(zip(np.zeros(3), np.inf*np.ones(3)))
 
-    if x0 == None:
+    if x0 == None: # Find initial guess based on Tikhonov Regularization
         P_lambda = tikhonov(K, S, lambda_ = 1.0, L = None)
         A_0 = np.max(P_lambda) # Amplitude is maximum value
         sigma_0 = 0.2e-9 # Sigma is this value

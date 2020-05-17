@@ -27,7 +27,7 @@ Bruker Elexsys data can be imported, to import Bruker data:
 Generating Simulated Data
 -------------------------
 
-For test purposes, it can be useful to simulate the DEER signal due to a Gaussian distance distribution. This can be done as follows:
+For test purposes, it can be useful to simulate the DEER signal from a Gaussian distance distribution. This can be done as follows:
 
 .. code-block:: python
 
