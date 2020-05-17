@@ -7,6 +7,7 @@ def add_noise(S,sigma):
     
     Args:
         S (numpy.ndarray): Array to add noise to
+        sigma (float): Standard deviation of noise
         
     Returns:
         S_noisy (numpy.ndarray): Array with noise added
@@ -114,7 +115,7 @@ def background(t, tau, A, B, d = 3.):
 
     Args:
         t (numpy.ndarray): Time axes for background function
-        tau (float): Constant 
+        tau (float): Time constant 
         A (float): Offset
         B (float): Scaling factor
         d (float): dimensionality of background function
@@ -178,14 +179,6 @@ def fit_background(data, t, background_function = background, t_min = 0.):
 def operator(n, L):
     '''Return operator for Regularization
 
-    Args:
-        n (int): Number of points in Kernal distance dimension
-        L (str, numpy.ndarray): String identifying name of operator or numpy array for operator to pass through function
-
-    Returns:
-        L (numpy.ndarray): Regularization operator as numpy array
-
-
     +-------------------+----------------------+
     |Operator (L)       |Description           |
     +===================+======================+
@@ -196,6 +189,12 @@ def operator(n, L):
     |'2nd Derivative'   |2nd Derivative Matrix |
     +-------------------+----------------------+
 
+    Args:
+        n (int): Number of points in Kernal distance dimension
+        L (str, numpy.ndarray): String identifying name of operator or numpy array for operator to pass through function
+
+    Returns:
+        L (numpy.ndarray): Regularization operator as numpy array
     '''
     if L == 'Identity':
         L = np.eye(n)
@@ -222,7 +221,7 @@ def tikhonov(K, S, lambda_ = 1.0, L = None):
         K (numpy.ndarray): Kernel Matrix
         S (numpy.ndarray): Experimental DEER trace
         lambda_ (float): Regularization parameter
-        L (None, numpy.ndarray): Tikhonov regularization operator, uses identity if argument is None
+        L (None, numpy.ndarray): Tikhonov regularization operator, uses 2nd derivative if argument is None
 
     Returns: 
         P_lambda (numpy.ndarray): Distance distribution from Tikhonov regularization
@@ -247,7 +246,7 @@ def L_curve(K, S, lambda_array, L = None):
         K (numpy.ndarray): Kernel Matrix
         S (numpy.ndarray): Experimental DEER trace
         lambda_ (numpy.ndarray): Array of Regularization parameters
-        L (None, numpy.ndarray): Tikhonov regularization operator, uses identity if argument is None
+        L (None, numpy.ndarray): Tikhonov regularization operator, uses 2nd derivative if argument is None
 
     Returns:
         (tuple): tuple containing:
@@ -344,12 +343,12 @@ def model_free(K, S, lambda_, L = None):
 def gaussian(r, sigma, mu, Normalize = False):
     '''Return Gaussian Distribution from given distance array, standard deviation, and mean distance
 
-    If Normalize = True
+    If Normalize = True:
 
     .. math::
         \\frac{1}{\sqrt{2 \pi {\sigma}^2}} e^{-{(r-\mu)}^2/(2\sigma^2)}
 
-    If Normalize = False
+    If Normalize = False:
 
     .. math::
         e^{-{(r-\mu)}^2/(2\sigma^2)}

@@ -60,8 +60,10 @@ def load_elexsys(filename):
     Args:
         filename (str): Filename of data
 
-    Returns:
-        dimsList (numpy.ndarray, List): Numpy array of data if data is 1d, otherwise returns a list of the dimension arrays
+    Returns: tuple
+
+        dimsList (numpy.ndarray, list): Numpy array of data if data is 1d, otherwise returns a list of the dimension arrays
+
         data (numpy.ndarray): Numpy array of data
     '''
     # Handle extension

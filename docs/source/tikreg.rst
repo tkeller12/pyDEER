@@ -1,6 +1,6 @@
-======
-tikreg
-======
+=============
+tikreg Module
+=============
 
 
 Functions
