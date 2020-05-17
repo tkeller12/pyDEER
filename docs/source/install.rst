@@ -12,7 +12,7 @@ pyDEER can be installed via pip:
 
     python -m pip install pyDEER
 
-The required packages should automatically be installed when installing through pip. If for some reason these packages aren't installed. They can be installed as indicated below.
+The required packages should automatically be installed when installing through pip. If for some reason these packages aren't installed, they can be installed as indicated below.
 
 Requirements
 ------------

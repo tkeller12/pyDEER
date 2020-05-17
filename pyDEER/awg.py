@@ -34,8 +34,8 @@ def load_shape(filename):
     Args:
         filename (str): Path to file
 
-    Returns: numpy.ndarray
-        pulse: Array of pulse shape
+    Returns:
+        numpy.ndarray: Array of pulse shape
     '''
 
 
@@ -75,11 +75,12 @@ def adiabatic(tp, BW, beta, resolution = resolution):
         beta (float): truncation factor
         resolution (float): pulse resolution
 
-    Returns: tuple
+    Returns:
+        tuple: tuple containing:
 
-        t (numpy.ndarray): time axes
+            t (*numpy.ndarray*): Time axes
 
-        pulse (numpy.ndarray): Pulse shape
+            pulse (*numpy.ndarray*): Pulse shape
     '''
 
     beta = float(beta)/tp
@@ -101,11 +102,12 @@ def chirp(tp, BW, resolution = resolution):
         tp (float): Pulse length
         BW (float): Bandwidth of pulse
 
-    Returns: tuple
+    Returns:
+        tuple: tuple containing:
 
-        t (numpy.ndarray): Time axis
+            t (*numpy.ndarray*): Time axis
 
-        pulse (numpy.ndarray): Pulse shape
+            pulse (*numpy.ndarray*): Pulse shape
     '''
     k = BW/tp
     t = np.r_[0.:tp:resolution]
@@ -122,11 +124,12 @@ def wurst(tp, N, resolution = resolution):
         tp (float): Pulse length
         N (float): exponential 
 
-    Returns: tuple
+    Returns:
+        tuple: tuple containing:
 
-        t (numpy.ndarray): Time axis of pulse
+        t (*numpy.ndarray*): Time axis
 
-        pulse (numpy.ndarray): Pulse shape
+        pulse (*numpy.ndarray*): Pulse shape
     '''
     t = np.r_[0.:tp:resolution]
     pulse = (1. - np.abs(np.cos(np.pi*(t-tp/2.)/tp + np.pi/2.))**N) + 0j
@@ -143,11 +146,12 @@ def gaussian_pulse(tp, sigmas, resolution = resolution):
         tp (float): Pulse length
         sigmas (float): Number of standard deviations where pulse is truncated
 
-    Returns: tuple
+    Returns:
+        tuple: tuple containing:
 
-        t (numpy.ndarray): Time axis
+            t (*numpy.ndarray*): Time axis
 
-        pulse (numpy.ndarray): Pulse shape
+            pulse (*numpy.ndarray*): Pulse shape
     '''
     sigma = 0.5*tp/sigmas
     t = np.r_[0.:tp:resolution]
@@ -161,11 +165,12 @@ def sq_pulse(tp, t_length = 0., resolution = resolution):
         tp (float): Pulse length
         t_length (float): Total length of time axis
 
-    Returns: tuple
+    Returns:
+        tuple: tuple containing:
 
-        t (numpy.ndarray): Time axis
+            t (*numpy.ndarray*): Time axis
 
-        pulse (numpy.ndarray): Pulse shape
+            pulse (*numpy.ndarray*): Pulse shape
     '''
     if t_length > tp:
         t = np.r_[0.:t_length:resolution]
@@ -188,11 +193,12 @@ def plane_wave(tp, f, resolution = resolution):
         tp (float): Pulse length
         f (float): Frequency of plane wave
 
-    Returns: tuple
+    Returns:
+        tuple: tuple containing:
 
-        t (numpy.ndarray): Time axis
+            t (*numpy.ndarray*): Time axis
 
-        pulse (numpy.ndarray): Pulse shape
+            pulse (*numpy.ndarray*): Pulse shape
     '''
     t = np.r_[0.:tp:resolution]
     pulse = np.exp(1.j*2.*np.pi*f*(t - tp/2.))
@@ -211,11 +217,12 @@ def sinc(tp, n, resolution = resolution):
         n (float): Total sinc lobes, must be odd for full sinc
     n is number of sinc lobes, should be odd for full sinc
 
-    Returns: tuple
+    Returns:
+        tuple: tuple containing:
 
-        t (numpy.ndarray): Time axis
+            t (*numpy.ndarray*): Time axis
 
-        pulse (numpy.ndarray): Pulse shape
+            pulse (*numpy.ndarray*): Pulse shape
     '''
     t = np.r_[0.:tp:resolution]
     pulse = np.sin(((n+1.)/2.)*np.pi*(t-tp/2.)/(0.5*tp))/((t-tp/2)/(0.5*tp))

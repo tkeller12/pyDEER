@@ -9,7 +9,7 @@ def load_DAT(filename):
         filename (str): path to data file in string format
 
     Returns:
-        data (numpy.ndarray): Experimental data as numpy array. No reshaping or formatting applied. Complex or multi-dimensional data must be subsequently processed.
+        numpy.ndarray: Experimental data as numpy array. No reshaping or formatting applied. Complex or multi-dimensional data must be subsequently processed.
     '''
     
     data = np.fromfile(filename, dtype = '>f8')
@@ -23,7 +23,7 @@ def load_DSC(filename):
         filename (str): Path to parameters file in string format
 
     Returns:
-        DSC_dict (dict): Dictionary of Descriptor Information in DSC file
+        dict: Dictionary of Descriptor Information in DSC file
     '''
 
     DSC_dict = {}
@@ -60,11 +60,12 @@ def load_elexsys(filename):
     Args:
         filename (str): Filename of data
 
-    Returns: tuple
+    Returns: 
+        tuple: tuple containing:
 
-        dimsList (numpy.ndarray, list): Numpy array of data if data is 1d, otherwise returns a list of the dimension arrays
+            dimsList (*numpy.ndarray*, *list*): Numpy array of data if data is 1d, otherwise returns a list of the dimension arrays
 
-        data (numpy.ndarray): Numpy array of data
+            data (*numpy.ndarray*): Numpy array of data
     '''
     # Handle extension
     filename,extension = os.path.splitext(filename)
@@ -121,3 +122,6 @@ def load_elexsys(filename):
         dimsList = dimsList[0]
 
     return dimsList, data
+
+if __name__ == '__main__':
+    pass
