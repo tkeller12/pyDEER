@@ -1,6 +1,7 @@
 import numpy as np
 import os
 from scipy.optimize import least_squares, minimize
+from scipy.special import fresnel
 
 def add_noise(S,sigma):
     '''Add noise to array
@@ -17,7 +18,7 @@ def add_noise(S,sigma):
 
     return S_noisy
 
-def kernel(t, r, angles = 5000):
+def kernel(t, r, method = 'fresnel', angles = 5000):
     '''Return the Kernel Matrix.
 
     .. math::
@@ -25,9 +26,19 @@ def kernel(t, r, angles = 5000):
 
         \omega_{ee} = \\frac{\gamma_e^2\hbar}{r^3}
 
+    +-------------------+----------------------+
+    |Method             |Description           |
+    +===================+======================+
+    |'fresnel'          |Fresnel Integral      |
+    +-------------------+----------------------+
+    |'brute force'      |Brute Force Method    |
+    +-------------------+----------------------+
+
     Args:
         t (numpy.ndarray): Array of time values in seconds
         r (numpy.ndarray): Array of radius (distance) values in meters
+        method (str): Method for calculating the kernel. By default, uses the fresnel integral
+        angles (int): For brute-force kernel, number of angles to average over
 
     Returns:
         numpy.ndarray: Numpy array of kernel. The first dimension is the time dimension. The second dimension is the distance dimension.
@@ -70,13 +81,22 @@ def save_kernel(k, filename, directory = 'kernels'):
 
     np.savetxt(full_path,k,delimiter = ',')
 
-def deer_trace(t, r, angles=1000):
+def deer_trace(t, r, method = 'fresnel', angles=1000):
     '''Calculate the DEER trace corresponding to a given time axes and distance value
+
+    +-------------------+----------------------+
+    |Method             |Description           |
+    +===================+======================+
+    |'fresnel'          |Fresnel Integral      |
+    +-------------------+----------------------+
+    |'brute force'      |Brute Force Method    |
+    +-------------------+----------------------+
 
     Args:
         t (numpy.ndarray): Time axes of DEER trace
         r (float, int, numpy.ndarray): Distances value or values in meters
-        angles (int): Number of angles to average when generating DEER trace
+        method (str): Method for calculating deer trace, by default uses fresnel integral
+        angles (int): For brute force method, number of angles to average when generating DEER trace
 
     Returns:
         numpy.ndarray: DEER trace
@@ -95,16 +115,25 @@ def deer_trace(t, r, angles=1000):
         show()
     '''
     theta_array = np.r_[0.:np.pi/2.:1j*angles]
+#    theta_array = np.r_[0.:np.pi:1j*angles]
 
     omega_ee = 2.*np.pi*(5.204e-20)/(r**3.)
 
-    trace = np.zeros_like(t)
-    for theta in theta_array:
-        omega = (omega_ee)*(2.*(np.cos(theta)**2.)-1.)
-        trace = trace + np.cos(theta)*np.cos(omega*t)
+    if method == 'brute force':
+        trace = np.zeros_like(t)
+        for theta in theta_array:
+            omega = (omega_ee)*(3.*(np.cos(theta)**2.)-1.)
+            trace = trace + np.sin(theta)*np.cos(omega*t)
 
-    # Normalize by number of angles
-    trace = trace / angles
+        # Normalize by number of angles and Fresnel Integral
+        trace = trace / (angles * (np.sqrt(np.pi/8.)))
+    elif method == 'fresnel':
+        x = np.sqrt(6.*omega_ee*np.abs(t))/ np.sqrt(np.pi)
+
+        S, C = fresnel(x)
+
+        trace = np.cos(omega_ee*t)*(C/x) + np.sin(omega_ee*np.abs(t))*(S/x)
+
     return trace
 
 def background(t, tau, A, B, d = 3.):
