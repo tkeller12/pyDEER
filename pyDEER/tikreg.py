@@ -114,12 +114,11 @@ def deer_trace(t, r, method = 'fresnel', angles=1000):
         plot(t,trace)
         show()
     '''
-    theta_array = np.r_[0.:np.pi/2.:1j*angles]
-#    theta_array = np.r_[0.:np.pi:1j*angles]
 
     omega_ee = 2.*np.pi*(5.204e-20)/(r**3.)
 
     if method == 'brute force':
+        theta_array = np.r_[0.:np.pi/2.:1j*angles]
         trace = np.zeros_like(t)
         for theta in theta_array:
             omega = (omega_ee)*(3.*(np.cos(theta)**2.)-1.)
