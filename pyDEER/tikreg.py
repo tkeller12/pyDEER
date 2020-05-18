@@ -101,10 +101,11 @@ def deer_trace(t, r, angles=1000):
     trace = np.zeros_like(t)
     for theta in theta_array:
         omega = (omega_ee)*(2.*(np.cos(theta)**2.)-1.)
-        trace = trace + np.cos(theta)*np.cos(omega*t)
+#        trace = trace + np.cos(theta)*np.cos(omega*t)
+        trace = trace + np.sin(theta)*np.cos(omega*t)
 
-    # Normalize by number of angles
-    trace = trace / angles
+    # Normalize by number of angles and Fresnel Integral
+    trace = trace / (angles * (np.sqrt(np.pi/8.)))
     return trace
 
 def background(t, tau, A, B, d = 3.):
