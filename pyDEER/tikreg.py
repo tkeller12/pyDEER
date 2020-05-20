@@ -81,6 +81,24 @@ def save_kernel(k, filename, directory = 'kernels'):
 
     np.savetxt(full_path,k,delimiter = ',')
 
+def background_dist(t):
+    '''Calculate the distance above which P(r) should be zero in background fit.
+
+    Args:
+        t (numpy.ndarray): Time axes
+
+    Returns:
+        r (float): Distance value for background fit
+
+    '''
+
+    omega_ee = 36. / (2. * np.pi *np.max(t))
+
+    r = ((2. * np.pi * 5.204e-20)/omega_ee)**(1./3.)
+
+    return r
+
+
 def deer_trace(t, r, method = 'fresnel', angles=1000):
     '''Calculate the DEER trace corresponding to a given time axes and distance value
 
@@ -173,7 +191,63 @@ def background_x0(t, data):
     x0 = [tau, A, B]
     return x0
 
-def fit_background(t, data, background_function = background, t_min = 0.,x0 = None):
+def tikhonov_background(t, r, K, data, background_function = background, r_background = None, lambda_ = 1., L = None, x0 = None):
+    '''Fit DEER data to background function by forcing P(r) to be zero 
+
+    Args:
+        t (numpy.ndarray): Array of time axis values
+        data (numpy.ndarray): Array of data values
+        background_function (func): Background function
+        r_background (float): Distance above which P(r) is optimized to zero
+        lambda_ (float): Regularization parameter
+        L (str, numpy.ndarray): Regularization operator
+        x0 (list): Initial guess for background fit parameters
+
+    Returns:
+        numpy.ndarray: Background fit of data
+    '''
+
+    # If None, determine r_background based on time trace
+    if r_background == None:
+        r_background = background_dist(t)
+
+    print(r_background)
+    # If None, initial guess for background function
+    if x0 == None:
+        x0 = background_x0(t, data)
+
+    def res(x, data, t, r, K, r_background):
+#    def res(x):
+        P_tik = tikhonov(K, (data / background_function(t, *x)) - 1., lambda_ = lambda_, L = L)
+#        P_tik = P_tik / np.sum(np.abs(P_tik))
+
+
+        # old method
+        P_tik[r < r_background] = 0.
+        residual = P_tik
+
+
+        # new method
+#        P_tik[r > r_background] = 0.
+#        fit = np.dot(K,P_tik)
+#        residual = data - ((fit + 1 ) * background_function(t, *x))
+
+#        P_tik[r < 5e-9] = 0.
+#        print(np.sum(residual**2.))
+
+        return residual
+
+    out = least_squares(res, x0, verbose = 2, args = (data, t, r, K, r_background), method = 'lm')
+#    out = least_squares(res, x0, verbose = 2, args = (data, t, r, K, r_background), method = 'trf')
+#    out = minimize(res, x0, args = (data, t, r, K, r_background), method = 'L-BFGS-B')
+
+    x = out['x']
+
+    fit = background_function(t, *x)
+
+    return fit
+
+def exp_background(t, data, background_function = background, t_min = 0., x0 = None):
     '''Fit DEER data to background function
 
     Args:
@@ -187,21 +261,27 @@ def fit_background(t, data, background_function = background, t_min = 0.,x0 = No
         numpy.ndarray: Fit of data
     '''
 
-    def res(x, data, t):
-        residual = data - background_function(t,*x)
-        return residual
-
     if x0 == None:
         x0 = background_x0(t, data)
 
+    def res(x, t, data):
+        residual = data - background_function(t, *x)
+#        P_tik = tikhonov(K, (data / background_function(t,*x)) - 1., lambda_ = 100, L = '2nd Derivative')
+#        P_tik = P_tik / np.sum(P_tik)
+#        P_tik[r < r_background] = 0
+#        residual = P_tik
+        return residual
+
     # select range of data for fit
+    r_background = background_dist(t)
+    print(r_background)
     data_fit = data[t >= t_min]
     t_fit = t[t >= t_min]
 
-    out = least_squares(res,x0,verbose = 2,args = (data_fit,t_fit))
+#    out = least_squares(res,x0,verbose = 2,args = (data_fit, t_fit, r, K))
+    out = least_squares(res, x0, verbose = 2, args = (t_fit, data_fit), method = 'lm')
     x = out['x']
 
-    
     fit = background_function(t,*x)
 
     return fit
