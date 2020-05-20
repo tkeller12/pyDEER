@@ -154,7 +154,7 @@ def background(t, tau, A, B, d = 3.):
     background_signal = A + B*np.exp(-1*(np.abs(t)**(d/3.))/tau)
     return background_signal
 
-def background_x0(data, t):
+def background_x0(t, data):
     '''Guess initial parameters for background function
 
     Args:
@@ -167,20 +167,21 @@ def background_x0(data, t):
 
     A = data[-1]
     B = np.max(data) - A
-    tau = 1e-6
+    tau = 10e-6
     d = 3.
     
     x0 = [tau, A, B]
     return x0
 
-def fit_background(data, t, background_function = background, t_min = 0.):
+def fit_background(t, data, background_function = background, t_min = 0.,x0 = None):
     '''Fit DEER data to background function
 
     Args:
-        data (numpy.ndarray): Array of data values
         t (numpy.ndarray): Array of time axis values
+        data (numpy.ndarray): Array of data values
         background_function (func): Background function
         t_min (float): Start time for fit
+        x0 (list): Initial guess for background fit parameters
 
     Returns:
         numpy.ndarray: Fit of data
@@ -190,7 +191,8 @@ def fit_background(data, t, background_function = background, t_min = 0.):
         residual = data - background_function(t,*x)
         return residual
 
-    x0 = background_x0(data,t)
+    if x0 == None:
+        x0 = background_x0(t, data)
 
     # select range of data for fit
     data_fit = data[t >= t_min]
@@ -331,11 +333,11 @@ def maximum_entropy(K, S, lambda_):
 
     return P_lambda
 
-def model_free(K, S, lambda_, L = None):
+def model_free(K, S, lambda_ = 1., L = None):
     '''Model Free P(r) with non-negative constraints
 
     .. math::
-        \Phi_{MF}[P] = \|K P(r) - S\|^2 + \lambda^2 \| LP \|^2 \\Rightarrow \min
+        \Phi_{MF}[P(r)] = \|K P(r) - S\|^2 + \lambda^2 \| LP(r) \|^2 \\Rightarrow \min
 
     Args:
         K (numpy.ndarray): Kernel Matrix
@@ -404,7 +406,7 @@ def gaussians(r, x):
 
     Args:
         r (numpy.ndarray): Numpy array of distance values
-        x (list): list of lists. Each gaussian is definied by a list of 3 parameters.
+        x (list): list of lists. Each gaussian is definied by a list of 3 parameters. The parameters are ordered: A - amplitude, sigma - standard deviation, mu - center of distribution.
 
     Returns:
         numpy.ndarray: Gaussian distribution
