@@ -213,16 +213,18 @@ def background_x0(t, data):
     x0 = [tau, A, B]
     return x0
 
-def tikhonov_background(t, r, K, data, background_function = background, r_background = None, lambda_ = 1., L = None, x0 = None):
+def tikhonov_background(t, r, K, data, background_function = background, r_background = None, lambda_ = 1., L = 'Identity', x0 = None):
     '''Fit DEER data to background function by forcing P(r) to be zero 
 
     Args:
         t (numpy.ndarray): Array of time axis values
+        r (numpy.ndarray): Array of distance values for Kernel
+        K (numpy.ndarray): Kernel matrix
         data (numpy.ndarray): Array of data values
         background_function (func): Background function
         r_background (float): Distance above which P(r) is optimized to zero
         lambda_ (float): Regularization parameter
-        L (str, numpy.ndarray): Regularization operator
+        L (str, numpy.ndarray): Regularization operator, by default Identity for background optimization
         x0 (list): Initial guess for background fit parameters
 
     Returns:
@@ -240,33 +242,19 @@ def tikhonov_background(t, r, K, data, background_function = background, r_backg
 
     def res(x, data, t, r, K, r_background):
         P_tik = tikhonov(K, (data / background_function(t, *x)) - 1., lambda_ = lambda_, L = L)
-#        P_tik = P_tik / np.sum(np.abs(P_tik))
 
-
-        # old method
         P_tik[r < r_background] = 0.
         residual = P_tik
-
-
-        # new method
-#        P_tik[r > r_background] = 0.
-#        fit = np.dot(K,P_tik)
-#        residual = data - ((fit + 1 ) * background_function(t, *x))
-
-#        P_tik[r < 5e-9] = 0.
-#        print(np.sum(residual**2.))
 
         return residual
 
     out = least_squares(res, x0, verbose = 2, args = (data, t, r, K, r_background), method = 'lm')
-#    out = least_squares(res, x0, verbose = 2, args = (data, t, r, K, r_background), method = 'trf')
-#    out = minimize(res, x0, args = (data, t, r, K, r_background), method = 'L-BFGS-B')
 
     x = out['x']
 
     fit = background_function(t, *x)
 
-    return fit, x
+    return fit
 
 def exp_background(t, data, background_function = background, t_min = 0., x0 = None):
     '''Fit DEER data to background function
