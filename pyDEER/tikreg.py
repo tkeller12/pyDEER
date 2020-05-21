@@ -235,7 +235,6 @@ def tikhonov_background(t, r, K, data, background_function = background, r_backg
     if r_background == None:
         r_background = background_dist(t)
 
-    print(r_background)
     # If None, initial guess for background function
     if x0 is None:
         x0 = background_x0(t, data)
@@ -275,19 +274,12 @@ def exp_background(t, data, background_function = background, t_min = 0., x0 = N
 
     def res(x, t, data):
         residual = data - background_function(t, *x)
-#        P_tik = tikhonov(K, (data / background_function(t,*x)) - 1., lambda_ = 100, L = '2nd Derivative')
-#        P_tik = P_tik / np.sum(P_tik)
-#        P_tik[r < r_background] = 0
-#        residual = P_tik
         return residual
 
     # select range of data for fit
-    r_background = background_dist(t)
-    print(r_background)
     data_fit = data[t >= t_min]
     t_fit = t[t >= t_min]
 
-#    out = least_squares(res,x0,verbose = 2,args = (data_fit, t_fit, r, K))
     out = least_squares(res, x0, verbose = 2, args = (t_fit, data_fit), method = 'lm')
     x = out['x']
 
