@@ -3,6 +3,27 @@ import os
 from scipy.optimize import least_squares, minimize
 from scipy.special import fresnel
 
+def autophase(S):
+    '''Optimize phase of complex data by maximizing the sum of imaginary over sum of real
+
+    .. math::
+        \phi = \\arctan \left( \\frac{\sum_i^N \Im(s_i) }{  \sum_i^N \Re(s_i) } \\right)
+
+        S_{\phi} = S e^{-i \phi}
+
+    Args:
+        S (numpy.ndarray): Complex data
+
+    Returns:
+        numpy.ndarray: Automatically phased complex data
+    '''
+
+    phase = np.arctan(np.sum(np.imag(S))/np.sum(np.real(S)))
+
+    S_phased = np.exp(-1j * phase) * S
+
+    return S_phased
+
 def add_noise(S,sigma):
     '''Add noise to array
     
@@ -213,7 +234,7 @@ def tikhonov_background(t, r, K, data, background_function = background, r_backg
 
     print(r_background)
     # If None, initial guess for background function
-    if x0 == None:
+    if x0 is None:
         x0 = background_x0(t, data)
 
     def res(x, data, t, r, K, r_background):
@@ -245,7 +266,7 @@ def tikhonov_background(t, r, K, data, background_function = background, r_backg
 
     fit = background_function(t, *x)
 
-    return fit
+    return fit, x
 
 def exp_background(t, data, background_function = background, t_min = 0., x0 = None):
     '''Fit DEER data to background function
