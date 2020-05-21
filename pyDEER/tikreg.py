@@ -113,7 +113,8 @@ def background_dist(t):
 
     '''
 
-    omega_ee = 36. / (2. * np.pi *np.max(t))
+    oscillations = 2.
+    omega_ee = 2.*np.pi * oscillations / np.max(t)
 
     r = ((2. * np.pi * 5.204e-20)/omega_ee)**(1./3.)
 
@@ -238,7 +239,6 @@ def tikhonov_background(t, r, K, data, background_function = background, r_backg
         x0 = background_x0(t, data)
 
     def res(x, data, t, r, K, r_background):
-#    def res(x):
         P_tik = tikhonov(K, (data / background_function(t, *x)) - 1., lambda_ = lambda_, L = L)
 #        P_tik = P_tik / np.sum(np.abs(P_tik))
 
