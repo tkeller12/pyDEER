@@ -3,6 +3,27 @@ import os
 from scipy.optimize import least_squares, minimize
 from scipy.special import fresnel
 
+def autophase(S):
+    '''Optimize phase of complex data by maximizing the sum of imaginary over sum of real
+
+    .. math::
+        \phi = \\arctan \left( \\frac{\sum_i^N \Im(s_i) }{  \sum_i^N \Re(s_i) } \\right)
+
+        S_{\phi} = S e^{-i \phi}
+
+    Args:
+        S (numpy.ndarray): Complex data
+
+    Returns:
+        numpy.ndarray: Automatically phased complex data
+    '''
+
+    phase = np.arctan(np.sum(np.imag(S))/np.sum(np.real(S)))
+
+    S_phased = np.exp(-1j * phase) * S
+
+    return S_phased
+
 def add_noise(S,sigma):
     '''Add noise to array
     
@@ -81,6 +102,25 @@ def save_kernel(k, filename, directory = 'kernels'):
 
     np.savetxt(full_path,k,delimiter = ',')
 
+def background_dist(t):
+    '''Calculate the distance above which P(r) should be zero in background fit.
+
+    Args:
+        t (numpy.ndarray): Time axes
+
+    Returns:
+        r (float): Distance value for background fit
+
+    '''
+
+    oscillations = 2.
+    omega_ee = 2.*np.pi * oscillations / np.max(t)
+
+    r = ((2. * np.pi * 5.204e-20)/omega_ee)**(1./3.)
+
+    return r
+
+
 def deer_trace(t, r, method = 'fresnel', angles=1000):
     '''Calculate the DEER trace corresponding to a given time axes and distance value
 
@@ -114,12 +154,11 @@ def deer_trace(t, r, method = 'fresnel', angles=1000):
         plot(t,trace)
         show()
     '''
-    theta_array = np.r_[0.:np.pi/2.:1j*angles]
-#    theta_array = np.r_[0.:np.pi:1j*angles]
 
     omega_ee = 2.*np.pi*(5.204e-20)/(r**3.)
 
     if method == 'brute force':
+        theta_array = np.r_[0.:np.pi/2.:1j*angles]
         trace = np.zeros_like(t)
         for theta in theta_array:
             omega = (omega_ee)*(3.*(np.cos(theta)**2.)-1.)
@@ -155,7 +194,7 @@ def background(t, tau, A, B, d = 3.):
     background_signal = A + B*np.exp(-1*(np.abs(t)**(d/3.))/tau)
     return background_signal
 
-def background_x0(data, t):
+def background_x0(t, data):
     '''Guess initial parameters for background function
 
     Args:
@@ -168,39 +207,82 @@ def background_x0(data, t):
 
     A = data[-1]
     B = np.max(data) - A
-    tau = 1e-6
+    tau = 10e-6
     d = 3.
     
     x0 = [tau, A, B]
     return x0
 
-def fit_background(data, t, background_function = background, t_min = 0.):
+def tikhonov_background(t, r, K, data, background_function = background, r_background = None, lambda_ = 1., L = 'Identity', x0 = None):
+    '''Fit DEER data to background function by forcing P(r) to be zero 
+
+    Args:
+        t (numpy.ndarray): Array of time axis values
+        r (numpy.ndarray): Array of distance values for Kernel
+        K (numpy.ndarray): Kernel matrix
+        data (numpy.ndarray): Array of data values
+        background_function (func): Background function
+        r_background (float): Distance above which P(r) is optimized to zero
+        lambda_ (float): Regularization parameter
+        L (str, numpy.ndarray): Regularization operator, by default Identity for background optimization
+        x0 (list): Initial guess for background fit parameters
+
+    Returns:
+        numpy.ndarray: Background fit of data
+    '''
+
+    # If None, determine r_background based on time trace
+    if r_background == None:
+        r_background = background_dist(t)
+
+    # If None, initial guess for background function
+    if x0 is None:
+        x0 = background_x0(t, data)
+
+    def res(x, data, t, r, K, r_background):
+        P_tik = tikhonov(K, (data / background_function(t, *x)) - 1., lambda_ = lambda_, L = L)
+
+        P_tik[r < r_background] = 0.
+        residual = P_tik
+
+        return residual
+
+    out = least_squares(res, x0, verbose = 2, args = (data, t, r, K, r_background), method = 'lm')
+
+    x = out['x']
+
+    fit = background_function(t, *x)
+
+    return fit
+
+def exp_background(t, data, background_function = background, t_min = 0., x0 = None):
     '''Fit DEER data to background function
 
     Args:
-        data (numpy.ndarray): Array of data values
         t (numpy.ndarray): Array of time axis values
+        data (numpy.ndarray): Array of data values
         background_function (func): Background function
         t_min (float): Start time for fit
+        x0 (list): Initial guess for background fit parameters
 
     Returns:
         numpy.ndarray: Fit of data
     '''
 
-    def res(x, data, t):
-        residual = data - background_function(t,*x)
-        return residual
+    if x0 == None:
+        x0 = background_x0(t, data)
 
-    x0 = background_x0(data,t)
+    def res(x, t, data):
+        residual = data - background_function(t, *x)
+        return residual
 
     # select range of data for fit
     data_fit = data[t >= t_min]
     t_fit = t[t >= t_min]
 
-    out = least_squares(res,x0,verbose = 2,args = (data_fit,t_fit))
+    out = least_squares(res, x0, verbose = 2, args = (t_fit, data_fit), method = 'lm')
     x = out['x']
 
-    
     fit = background_function(t,*x)
 
     return fit
@@ -332,11 +414,11 @@ def maximum_entropy(K, S, lambda_):
 
     return P_lambda
 
-def model_free(K, S, lambda_, L = None):
+def model_free(K, S, lambda_ = 1., L = None):
     '''Model Free P(r) with non-negative constraints
 
     .. math::
-        \Phi_{MF}[P] = \|K P(r) - S\|^2 + \lambda^2 \| LP \|^2 \\Rightarrow \min
+        \Phi_{MF}[P(r)] = \|K P(r) - S\|^2 + \lambda^2 \| LP(r) \|^2 \\Rightarrow \min
 
     Args:
         K (numpy.ndarray): Kernel Matrix
@@ -405,7 +487,7 @@ def gaussians(r, x):
 
     Args:
         r (numpy.ndarray): Numpy array of distance values
-        x (list): list of lists. Each gaussian is definied by a list of 3 parameters.
+        x (list): list of lists. Each gaussian is definied by a list of 3 parameters. The parameters are ordered: A - amplitude, sigma - standard deviation, mu - center of distribution.
 
     Returns:
         numpy.ndarray: Gaussian distribution
