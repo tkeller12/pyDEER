@@ -24,7 +24,7 @@ def autophase(S):
 
     return S_phased
 
-def add_noise(S,sigma):
+def add_noise(S, sigma):
     '''Add noise to array
     
     Args:
@@ -346,7 +346,7 @@ def tikhonov(K, S, lambda_ = 1.0, L = None):
     n = np.shape(K)[1]
 
     # Determine Operator for Regularization
-    L = operator(n,L)
+    L = operator(n, L)
 
     P_lambda = np.dot(np.linalg.inv(np.dot(K.T, K)+(lambda_**2.)*np.dot(L.T, L)),np.dot(K.T, S))
 
@@ -437,7 +437,7 @@ def model_free(K, S, lambda_ = 1., L = None):
     n = np.shape(K)[1]
 
     # Determine Operator for Regularization
-    L = operator(n,L)
+    L = operator(n, L)
 
     x0 = tikhonov(K, S, lambda_)
     x0[x0<=0.] = 1.e-5
