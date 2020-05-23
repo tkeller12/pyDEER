@@ -571,5 +571,46 @@ def model_gaussian(K, S, r, x0 = None):
 
     return P_gauss, x_fit
 
+def svd(K, S, cutoff = None):
+    '''Performs SVD on Kernel Matrix, singular values above cutoff index are set to zero, then calculates distance distribution with cutoff applied pseudo inverse.
+
+    .. math::
+        S = K P
+
+        S = U \Sigma V^T P
+
+        P = V \Sigma^{-1} U^T S
+
+    Args:
+        K (numpy.ndarray): Kernel 
+        S (numpy.ndarray): Data array
+        cutoff (int): Number of singular values to include. None correponds to including all singular values (no cutoff applied).
+
+    Returns:
+        P (numpy.ndarray): Distance distribution array
+    '''
+
+    if cutoff is not None:
+        cutoff = int(cutoff)
+
+    # Perform SVD on Kernel
+    U, singular_values, V = np.linalg.svd(K)
+
+    # Apply Cutoff to singular values
+    singular_values[cutoff:] = 0
+
+    # Construct matrix of singular values
+    m, n = np.shape(K)
+    sigma = np.zeros((m, n))
+    sigma[:int(min(m, n)),:int(min(m, n))] = np.diag(singular_values)
+
+    # Inverse Matrix from SVD with cutoff applied
+    A = np.dot(V.T, np.dot(np.linalg.pinv(sigma), U.T))
+
+    # Calculate P(r)
+    P = np.dot(A, S)
+    
+    return P
+
 if __name__ == '__main__':
     pass
