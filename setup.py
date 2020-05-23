@@ -8,7 +8,7 @@ setuptools.setup(
     version='1.0.6',
     author='Timothy Keller',
     author_email='tkeller@bridge12.com',
-    description='A Python Package for Fitting Double Electron-Electron Resonance Data',
+    description='A Python Package for Processing Double Electron-Electron Resonance (DEER) Data',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url='https://github.com/tkellerBridge12/pyDEER',

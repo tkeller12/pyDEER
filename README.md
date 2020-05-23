@@ -1,6 +1,6 @@
 # pyDEER #
 
-pyDEER is a python package for Double Electron-Electron Resonance.
+pyDEER is a python package for processing Double Electron-Electron Resonance (DEER) data.
 
 The source code for pyDEER is available [here](https://github.com/tkellerBridge12/pyDEER).
 
@@ -58,7 +58,7 @@ t = np.r_[-100e-9:5e-6:500j]
 r = np.r_[1.5e-9:10e-9:100j]
 
 # Generate Kernel Matrix
-K = deer.kernel(t, r, angles = 1000)
+K = deer.kernel(t, r)
 
 # Simulate Gaussian P(r)
 P_gauss = deer.gaussian(r, 0.2e-9, 4e-9)
