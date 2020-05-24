@@ -527,8 +527,8 @@ def model_gaussian(K, S, r, x0 = None):
         sigma = x[1]
         mu = x[2]
 
-        P_fit = A*gaussian(r,sigma,mu)
-        S_fit = np.dot(K,P_fit)
+        P_fit = A*gaussian(r, sigma, mu)
+        S_fit = np.dot(K, P_fit)
 
         res = sum((S_fit - S)**2.)
         return res
@@ -611,6 +611,87 @@ def svd(K, S, cutoff = None):
     P = np.dot(A, S)
     
     return P
+
+def zero_time(t, S, method = 'polyfit', **kwargs):
+    '''Shift DEER data to correct zero time offset
+
+    +-------------------+----------------------------------------------+
+    |Method             |Description                                   |
+    +===================+==============================================+
+    |'max'              |Set zero time to maximum of data              |
+    +-------------------+----------------------------------------------+
+    |'polyfit'          |polynomial fit about time zero                |
+    +-------------------+----------------------------------------------+
+
+    Args:
+        t (numpy.ndarray): Time axes
+        S (numpy.ndarray): Data array
+        method (str): Method to use for zero time correction
+
+    Returns:
+        tuple: tuple containing
+            
+            *numpy.ndarray*: Shifted time axes
+
+            *numpy.ndarray*: Data array
+
+    '''
+
+    if method == 'max':
+        ix = np.argmax(S)
+
+        t = t - t[ix]
+
+    elif method == 'polyfit':
+
+        if 'time_width' in kwargs:
+            time_width = kwargs.pop('time_width')
+        else:
+            time_width = 100e-9
+
+        if 'deg' in kwargs:
+            deg = kwargs.pop('deg')
+        else:
+            deg = 3.
+
+        t_ix_min = np.argmin(np.abs(t + time_width/2.))
+        t_ix_max = np.argmin(np.abs(t - time_width/2.))
+
+        t_fit = t[t_ix_min:t_ix_max]
+        S_fit = S[t_ix_min:t_ix_max]
+
+        p = np.polyfit(t_fit, S_fit, deg)
+
+        pder = np.polyder(p)
+
+        near_zero_root = np.min(np.abs(np.roots(pder)))
+
+        t = t - near_zero_root
+
+    return t, S
+
+def truncate(t, S, t_truncate):
+    '''Truncate time axes and data at given time
+
+    Args:
+        t (numpy.ndarray): Time axes
+        S (numpy.ndarray): Data Axes
+        t_truncate (float): time to trunctate data after
+
+    Returns:
+        tuple: tuple containing
+
+            t (numpy.ndarray): Truncated time axes
+            S (numpy.ndarray): Truncated data axes
+    '''
+
+    ix = np.argmin(np.abs(t - t_truncate))
+
+    t = t[:ix]
+
+    S = S[:ix]
+
+    return t, S
 
 if __name__ == '__main__':
     pass
