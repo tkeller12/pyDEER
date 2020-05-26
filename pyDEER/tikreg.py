@@ -587,7 +587,7 @@ def svd(K, S, cutoff = None):
         cutoff (int): Number of singular values to include. None correponds to including all singular values (no cutoff applied).
 
     Returns:
-        P (numpy.ndarray): Distance distribution array
+        P (*numpy.ndarray*): Distance distribution array
     '''
 
     if cutoff is not None:
@@ -623,6 +623,16 @@ def zero_time(t, S, method = 'polyfit', **kwargs):
     |'polyfit'          |polynomial fit about time zero                |
     +-------------------+----------------------------------------------+
 
+    Parameters for 'polyfit' Method:
+
+    +-------------------+-------------------------------------------------------+------------+
+    |Argument           |Description                                            |Default     |
+    +===================+=======================================================+============+
+    |'time_width'       |Time width about zero for polynomial fit (in seconds)  | 100e-9     |
+    +-------------------+-------------------------------------------------------+------------+
+    |'deg'              |degree of polynomial fit                               | 3          |
+    +-------------------+-------------------------------------------------------+------------+
+
     Args:
         t (numpy.ndarray): Time axes
         S (numpy.ndarray): Data array
@@ -634,7 +644,6 @@ def zero_time(t, S, method = 'polyfit', **kwargs):
             *numpy.ndarray*: Shifted time axes
 
             *numpy.ndarray*: Data array
-
     '''
 
     if method == 'max':
@@ -681,8 +690,9 @@ def truncate(t, S, t_truncate):
     Returns:
         tuple: tuple containing
 
-            t (numpy.ndarray): Truncated time axes
-            S (numpy.ndarray): Truncated data axes
+            *numpy.ndarray*: Truncated time axes
+
+            *numpy.ndarray*: Truncated data axes
     '''
 
     ix = np.argmin(np.abs(t - t_truncate))
