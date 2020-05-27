@@ -5,7 +5,7 @@ with open('README.md','r') as f:
 
 setuptools.setup(
     name='pyDEER',
-    version='1.0.6',
+    version='1.0.7',
     author='Timothy Keller',
     author_email='tkeller@bridge12.com',
     description='A Python Package for Processing Double Electron-Electron Resonance (DEER) Data',
@@ -23,5 +23,5 @@ setuptools.setup(
         'License :: OSI Approved :: MIT License',
         'Operating System :: OS Independent',
     ],
-    python_requires='>=2.7, >=3.6',
+    python_requires='>=2.6, >=3.6',
 )
