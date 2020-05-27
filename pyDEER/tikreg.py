@@ -24,7 +24,7 @@ def autophase(S):
 
     return S_phased
 
-def add_noise(S,sigma):
+def add_noise(S, sigma):
     '''Add noise to array
     
     Args:
@@ -346,7 +346,7 @@ def tikhonov(K, S, lambda_ = 1.0, L = None):
     n = np.shape(K)[1]
 
     # Determine Operator for Regularization
-    L = operator(n,L)
+    L = operator(n, L)
 
     P_lambda = np.dot(np.linalg.inv(np.dot(K.T, K)+(lambda_**2.)*np.dot(L.T, L)),np.dot(K.T, S))
 
@@ -437,7 +437,7 @@ def model_free(K, S, lambda_ = 1., L = None):
     n = np.shape(K)[1]
 
     # Determine Operator for Regularization
-    L = operator(n,L)
+    L = operator(n, L)
 
     x0 = tikhonov(K, S, lambda_)
     x0[x0<=0.] = 1.e-5
@@ -527,8 +527,8 @@ def model_gaussian(K, S, r, x0 = None):
         sigma = x[1]
         mu = x[2]
 
-        P_fit = A*gaussian(r,sigma,mu)
-        S_fit = np.dot(K,P_fit)
+        P_fit = A*gaussian(r, sigma, mu)
+        S_fit = np.dot(K, P_fit)
 
         res = sum((S_fit - S)**2.)
         return res
@@ -570,6 +570,138 @@ def model_gaussian(K, S, r, x0 = None):
     x_fit['mu'] = mu
 
     return P_gauss, x_fit
+
+def svd(K, S, cutoff = None):
+    '''Performs SVD on Kernel Matrix, singular values above cutoff index are set to zero, then calculates distance distribution with cutoff applied pseudo inverse.
+
+    .. math::
+        S = K P
+
+        S = U \Sigma V^T P
+
+        P = V \Sigma^{-1} U^T S
+
+    Args:
+        K (numpy.ndarray): Kernel 
+        S (numpy.ndarray): Data array
+        cutoff (int): Number of singular values to include. None correponds to including all singular values (no cutoff applied).
+
+    Returns:
+        P (*numpy.ndarray*): Distance distribution array
+    '''
+
+    if cutoff is not None:
+        cutoff = int(cutoff)
+
+    # Perform SVD on Kernel
+    U, singular_values, V = np.linalg.svd(K)
+
+    # Apply Cutoff to singular values
+    singular_values[cutoff:] = 0
+
+    # Construct matrix of singular values
+    m, n = np.shape(K)
+    sigma = np.zeros((m, n))
+    sigma[:int(min(m, n)),:int(min(m, n))] = np.diag(singular_values)
+
+    # Inverse Matrix from SVD with cutoff applied
+    A = np.dot(V.T, np.dot(np.linalg.pinv(sigma), U.T))
+
+    # Calculate P(r)
+    P = np.dot(A, S)
+    
+    return P
+
+def zero_time(t, S, method = 'polyfit', **kwargs):
+    '''Shift DEER data to correct zero time offset
+
+    +-------------------+----------------------------------------------+
+    |Method             |Description                                   |
+    +===================+==============================================+
+    |'max'              |Set zero time to maximum of data              |
+    +-------------------+----------------------------------------------+
+    |'polyfit'          |polynomial fit about time zero                |
+    +-------------------+----------------------------------------------+
+
+    Parameters for 'polyfit' Method:
+
+    +-------------------+-------------------------------------------------------+------------+
+    |Argument           |Description                                            |Default     |
+    +===================+=======================================================+============+
+    |'time_width'       |Time width about zero for polynomial fit (in seconds)  | 100e-9     |
+    +-------------------+-------------------------------------------------------+------------+
+    |'deg'              |degree of polynomial fit                               | 3          |
+    +-------------------+-------------------------------------------------------+------------+
+
+    Args:
+        t (numpy.ndarray): Time axes
+        S (numpy.ndarray): Data array
+        method (str): Method to use for zero time correction
+
+    Returns:
+        tuple: tuple containing
+            
+            *numpy.ndarray*: Shifted time axes
+
+            *numpy.ndarray*: Data array
+    '''
+
+    if method == 'max':
+        ix = np.argmax(S)
+
+        t = t - t[ix]
+
+    elif method == 'polyfit':
+
+        if 'time_width' in kwargs:
+            time_width = kwargs.pop('time_width')
+        else:
+            time_width = 100e-9
+
+        if 'deg' in kwargs:
+            deg = kwargs.pop('deg')
+        else:
+            deg = 3.
+
+        t_ix_min = np.argmin(np.abs(t + time_width/2.))
+        t_ix_max = np.argmin(np.abs(t - time_width/2.))
+
+        t_fit = t[t_ix_min:t_ix_max]
+        S_fit = S[t_ix_min:t_ix_max]
+
+        p = np.polyfit(t_fit, S_fit, deg)
+
+        pder = np.polyder(p)
+
+        near_zero_root = np.min(np.abs(np.roots(pder)))
+
+        t = t - near_zero_root
+
+    return t, S
+
+def truncate(t, S, t_truncate):
+    '''Truncate time axes and data at given time
+
+    Args:
+        t (numpy.ndarray): Time axes
+        S (numpy.ndarray): Data Axes
+        t_truncate (float): time to trunctate data after
+
+    Returns:
+        tuple: tuple containing
+
+            *numpy.ndarray*: Truncated time axes
+
+            *numpy.ndarray*: Truncated data axes
+    '''
+
+    ix = np.argmin(np.abs(t - t_truncate))
+
+    t = t[:ix]
+
+    S = S[:ix]
+
+    return t, S
 
 if __name__ == '__main__':
     pass
